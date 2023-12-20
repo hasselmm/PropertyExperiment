@@ -55,7 +55,6 @@ You can reach me via _mathias_ plus github at _taschenorakel_ in _de_.
 * [mproperty.h](mproperty.h) —
   The implementation of the C++ 20 moc replacement used by 
   [mobject.h](mobject.h).
-  > [!NOTE]
   > This is just a proof of concept. Many shortcuts, simplifications, 
   > sharp corners and edges. Goal was to proof the concept, not to 
   > provide a production ready implementation.
