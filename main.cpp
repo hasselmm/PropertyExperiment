@@ -21,8 +21,8 @@ private:
     template <class T>
     static void testProperties()
     {
-        const QFETCH(QByteArray, expectedClassName);
-        const QFETCH(QByteArray, expectedSuperClassName);
+        const QFETCH(QByteArrayView, expectedClassName);
+        const QFETCH(QByteArrayView, expectedSuperClassName);
 
         const auto typeName = QMetaType::fromType<T>().name();
         QCOMPARE(typeName, expectedClassName);
@@ -184,9 +184,8 @@ private slots:
     void testProperties_data()
     {
         QTest::addColumn<TestPropertiesFunction>("testRoutine");
-
-        QTest::addColumn<QByteArray>("expectedClassName");
-        QTest::addColumn<QByteArray>("expectedSuperClassName");
+        QTest::addColumn<QByteArrayView>("expectedClassName");
+        QTest::addColumn<QByteArrayView>("expectedSuperClassName");
 
         QTest::newRow("aproperty")
             << &PropertyTest::testProperties<aproperty::AObject>
