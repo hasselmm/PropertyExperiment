@@ -86,6 +86,25 @@ private:
         QCOMPARE(writable.hasNotifySignal(),     true);
 
         if constexpr (std::is_same_v<T, mproperty::MObject>) {
+            const auto uniquePropertyIds = QSet{object. constant.uniqueId(),
+                                                object.notifying.uniqueId(),
+                                                object. writable.uniqueId()};
+
+            SHOW(uniquePropertyIds); // for manual verification that Object::n() works
+            QCOMPARE(uniquePropertyIds.size(), 3);
+
+            const auto uniquePropertyOffsets = QSet{object. constant.offset(),
+                                                    object.notifying.offset(),
+                                                    object. writable.offset()};
+
+            QCOMPARE(uniquePropertyOffsets.size(), 3);
+
+            const auto uniquePropertyAddresses = QSet{object. constant.address(),
+                                                      object.notifying.address(),
+                                                      object. writable.address()};
+
+            QCOMPARE(uniquePropertyAddresses.size(), 3);
+
             const auto objectAddress = reinterpret_cast<qintptr>(&object);
 
             QCOMPARE(object. constant.offset() + objectAddress, object. constant.address());
