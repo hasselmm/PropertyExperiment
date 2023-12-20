@@ -33,37 +33,38 @@ public:
 
 The code works. I am pretty happy with the syntax of `MyObject`.
 
-Still this is just an experiment, a _proof of concept_. Many FIXMEs,
-lots of chances for improvement. Let me hear, what you think about it.
-It it worth to finish this experiment and bring it into production?
+> [!IMPORTANT]
+> Still this is just an experiment, a _proof of concept_. Many FIXMEs,
+> lots of chances for improvement. Let me hear, what you think about it.
+> It it worth to finish this experiment and bring it into production?
 
 You can reach me via _mathias_ plus github at _taschenorakel_ in _de_.
 
 ## Examples
 
-* [sobject.h], [sobject.cpp] —
+* [sobject.h](), [sobject.cpp]() —
   Standard implementation of a QObject with properties,
   as we are doing it for decades now.
-* [mobject.h], [mobject.cpp] -
+* [mobject.h](), [mobject.cpp]() -
   C++ 20 implementation of a QObject, similar to the one listed above.
-* [aobject.h], [aobject.cpp] —
+* [aobject.h](), [aobject.cpp]() —
   An initial, but abdoned attempt of an C++ 20 implementation.
 
 ## Implemenatation
 
-* [mproperty.h] —
-  The implementation of the C++ 20 moc replacement used by [mobject.h].
+* [mproperty.h]() —
+  The implementation of the C++ 20 moc replacement used by [mobject.h]().
   **Warning!** This is just a proof of concept. Many shortcuts,
   simplifications, sharp corners and edges. Goal was to proof the
   concept, not to provide a production ready implementation.
-* [mproperty.cpp] —
-  This file simply shall proof that [mproperty.h] is self-contained.
-* [aproperty.h], [aproperty.cpp] —
+* [mproperty.cpp]() —
+  This file simply shall proof that [mproperty.h]() is self-contained.
+* [aproperty.h](), [aproperty.cpp]() —
   Obsolete, abdoned implementation, just for curiosity.
 
 ## Tests
 
-* [main.cpp] —
+* [main.cpp]() —
   The main program just is a QTest fixture verifying the implementation.
 
 ## License
