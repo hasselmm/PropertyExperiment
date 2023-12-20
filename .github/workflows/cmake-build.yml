@@ -24,7 +24,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
         c_compiler: [gcc, clang-15, cl]
-        qt_version: [6.2.6, 6.5.3, 6.6.1]
+        qt_version: [6.2.4, 6.5.3, 6.6.1]
         include:
           - os: windows-latest
             c_compiler: cl
