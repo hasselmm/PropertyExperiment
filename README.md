@@ -1,2 +1,85 @@
-# PropertyExperiment
-A tiny experiment to see if C++20 can do QObject properties without moc
+# Property Experiment
+
+This is a tiny experiment to see if C++ 20 can do QObject properties without moc.
+This experiment was inspired by André Pölnitz' e-mail[^1] to the Qt Development
+list: "I haven't tried yet, but I have the gut feeling that one should be able
+to get away with..."
+
+Well, yes: André was right. C++ 20 can almost replace moc these days:
+
+``` C++
+class MyObject : public Object<MyObject, QObject>
+{
+    M_OBJECT
+
+public:
+    using Object::Object;
+
+    void modifyNotifying()
+    {
+        notifying = u"I have been changed per method"_s;
+    }
+
+    Property<n(), QString>          constant = u"I am constant"_s;
+    Property<n(), QString, Notify> notifying = u"I am observing"_s;
+    Property<n(), QString,  Write>  writable = u"I am modifiable"_s;
+
+    Setter<QString> setWritable = &writable;
+
+    static constexpr Signal<&MObject::notifying> notifyingChanged = {};
+    static constexpr Signal<&MObject::writable> writableChanged = {};
+};
+```
+
+The code works. I am pretty happy with the syntax of `MyObject`.
+
+Still this is just an experiment, a _proof of concept_. Many FIXMEs,
+lots of chances for improvement. Let me hear, what you think about it.
+It it worth to finish this experiment and bring it into production?
+
+You can reach me via _mathias_ plus github at _taschenorakel_ in _de_.
+
+## Examples
+
+* [sobject.h], [sobject.cpp] —
+  Standard implementation of a QObject with properties,
+  as we are doing it for decades now.
+* [mobject.h], [mobject.cpp] -
+  C++ 20 implementation of a QObject, similar to the one listed above.
+* [aobject.h], [aobject.cpp] —
+  An initial, but abdoned attempt of an C++ 20 implementation.
+
+## Implemenatation
+
+* [mproperty.h] —
+  The implementation of the C++ 20 moc replacement used by [mobject.h].
+  **Warning!** This is just a proof of concept. Many shortcuts,
+  simplifications, sharp corners and edges. Goal was to proof the
+  concept, not to provide a production ready implementation.
+* [mproperty.cpp] —
+  This file simply shall proof that [mproperty.h] is self-contained.
+* [aproperty.h], [aproperty.cpp] —
+  Obsolete, abdoned implementation, just for curiosity.
+
+## Tests
+
+* [main.cpp] —
+  The main program just is a QTest fixture verifying the implementation.
+
+## License
+
+The code is offered under the terms of the [MIT License](LICENSE).
+
+## Compiling, Building
+
+You need Qt 6.5 and CMake to build. Just open `CMakeLists.txt` in
+QtCreator and give it a go. Alternatively something like this:
+
+``` Bash
+mkdir build && cd build
+export Qt6_DIR=/path/to/your/qt6/lib/cmake/Qt6
+cmake ..
+cmake --build .
+```
+
+[^1]: https://lists.qt-project.org/pipermail/development/2023-December/044807.html
