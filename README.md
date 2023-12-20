@@ -42,29 +42,32 @@ You can reach me via _mathias_ plus github at _taschenorakel_ in _de_.
 
 ## Examples
 
-* [sobject.h](), [sobject.cpp]() —
-  Standard implementation of a QObject with properties,
-  as we are doing it for decades now.
-* [mobject.h](), [mobject.cpp]() -
+* [sobject.h](sobject.h), [sobject.cpp](sobject.cpp) —
+  Standard implementation of a QObject with properties, as we are doing 
+  it for decades now.
+* [mobject.h](mobject.h), [mobject.cpp](mobject.cpp) -
   C++ 20 implementation of a QObject, similar to the one listed above.
-* [aobject.h](), [aobject.cpp]() —
+* [aobject.h](aobject.h), [aobject.cpp](aobject.cpp) —
   An initial, but abdoned attempt of an C++ 20 implementation.
 
 ## Implemenatation
 
-* [mproperty.h]() —
-  The implementation of the C++ 20 moc replacement used by [mobject.h]().
-  **Warning!** This is just a proof of concept. Many shortcuts,
-  simplifications, sharp corners and edges. Goal was to proof the
-  concept, not to provide a production ready implementation.
-* [mproperty.cpp]() —
-  This file simply shall proof that [mproperty.h]() is self-contained.
-* [aproperty.h](), [aproperty.cpp]() —
+* [mproperty.h](mproperty.h) —
+  The implementation of the C++ 20 moc replacement used by 
+  [mobject.h](mobject.h).
+  > [!NOTE]
+  > This is just a proof of concept. Many shortcuts, simplifications, 
+  > sharp corners and edges. Goal was to proof the concept, not to 
+  > provide a production ready implementation.
+* [mproperty.cpp](mproperty.cpp) —
+  This file simply shall proof that [mproperty.h](mproperty.h) 
+  is self-contained.
+* [aproperty.h](aproperty.h), [aproperty.cpp](aproperty.cpp) —
   Obsolete, abdoned implementation, just for curiosity.
 
 ## Tests
 
-* [main.cpp]() —
+* [main.cpp](main.cpp) —
   The main program just is a QTest fixture verifying the implementation.
 
 ## License
