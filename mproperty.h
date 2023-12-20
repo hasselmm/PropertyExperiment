@@ -6,9 +6,14 @@
 
 #include <utility>
 
+#if defined(Q_CC_CLANG) && Q_CC_CLANG < 1600
+#define CURRENT_LINE_NUMBER() __builtin_LINE()
+#else
+#define CURRENT_LINE_NUMBER() std::source_location::current().line()
+#endif
+
 namespace mproperty {
 namespace Private {
-
 
 } // namespace Private
 
@@ -454,10 +459,9 @@ public:
     }
 
 protected:
-    static consteval std::size_t n(const std::source_location &source =
-                                   std::source_location::current())
+    static constexpr std::size_t n(std::size_t l = CURRENT_LINE_NUMBER()) noexcept
     {
-        return source.line();
+        return l;
     }
 };
 
@@ -467,7 +471,8 @@ protected:
                                                                                 \
 public:                                                                         \
     static const MetaObject staticMetaObject;                                   \
-    int qt_metacall(QMetaObject::Call call, int offset, void **args) override;
+    int qt_metacall(QMetaObject::Call call, int offset, void **args) override;  \
+    static_assert(n() == __LINE__);
 
 #define M_OBJECT_IMPLEMENTATION(ClassName, ...)                                 \
                                                                                 \
