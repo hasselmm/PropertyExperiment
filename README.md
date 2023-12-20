@@ -31,7 +31,9 @@ public:
 };
 ```
 
-The code works. I am pretty happy with the syntax of `MyObject`.
+The code works, and I am pretty happy with the syntax of `MyObject`.
+
+[![Build and Test with Clang/GCC/MSVC](https://github.com/hasselmm/PropertyExperiment/actions/workflows/cmake-build.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/cmake-build.yml)
 
 Actually the `Setter` and the `Signal` fields in this class are just
 syntactical sugar to preserve the API we got used to over the years.
