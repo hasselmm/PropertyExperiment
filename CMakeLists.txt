@@ -42,3 +42,8 @@ add_custom_target(
     Documentation SOURCES
     LICENSE README.md
 )
+
+add_custom_target(
+    GitHub SOURCES
+    .github\workflows\cmake-build.yml
+)
