@@ -45,5 +45,5 @@ add_custom_target(
 
 add_custom_target(
     GitHub SOURCES
-    .github\workflows\cmake-build.yml
+    .github/workflows/cmake-build.yml
 )
