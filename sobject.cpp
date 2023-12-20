@@ -9,7 +9,7 @@ QString SObject::constant() const
 
 void SObject::modifyNotifying()
 {
-    m_notifying = u"I have been changed per method"_s;
+    m_notifying = u"I have been changed per method"_qs;
     emit notifyingChanged(m_notifying);
 }
 

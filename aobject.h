@@ -8,8 +8,6 @@
 
 namespace aproperty {
 
-using namespace Qt::Literals;
-
 class AObject : public QObject
 {
     Q_OBJECT
@@ -20,16 +18,16 @@ class AObject : public QObject
 public:
     using QObject::QObject;
 
-    void modifyNotifying() { notifying = u"I have been changed per method"_s; }
+    void modifyNotifying() { notifying = u"I have been changed per method"_qs; }
 
 signals:
     void notifyingChanged(QString notifying);
     void writableChanged(QString writable);
 
 public:
-    Property<QString>                     constant  = {u"I am constant"_s};
-    Notifying<&AObject::notifyingChanged> notifying = {this, u"I am observing"_s};
-    Notifying<&AObject::writableChanged>  writable  = {this, u"I am modifiable"_s};
+    Property<QString>                     constant  = {u"I am constant"_qs};
+    Notifying<&AObject::notifyingChanged> notifying = {this, u"I am observing"_qs};
+    Notifying<&AObject::writableChanged>  writable  = {this, u"I am modifiable"_qs};
     const Setter<QString>              setWritable  = {&writable};
 };
 

@@ -5,8 +5,6 @@
 
 namespace sproperty {
 
-using namespace Qt::Literals;
-
 class SObject : public QObject
 {
     Q_OBJECT
@@ -30,9 +28,9 @@ signals:
     void writableChanged(QString writable);
 
 private:
-    QString m_constant  = u"I am constant"_s;
-    QString m_notifying = u"I am observing"_s;
-    QString m_writable  = u"I am modifiable"_s;
+    QString m_constant  = u"I am constant"_qs;
+    QString m_notifying = u"I am observing"_qs;
+    QString m_writable  = u"I am modifiable"_qs;
 };
 
 } // namespace sproperty

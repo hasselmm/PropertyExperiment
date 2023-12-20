@@ -8,8 +8,6 @@
 
 namespace mproperty {
 
-using namespace Qt::Literals;
-
 class MObjectBase : public QObject // for testing base type mechanism
 {
     Q_OBJECT
@@ -27,12 +25,12 @@ public:
 
     void modifyNotifying()
     {
-        notifying = u"I have been changed per method"_s;
+        notifying = u"I have been changed per method"_qs;
     }
 
-    Property<n(), QString>          constant = u"I am constant"_s;
-    Property<n(), QString, Notify> notifying = u"I am observing"_s;
-    Property<n(), QString,  Write>  writable = u"I am modifiable"_s;
+    Property<n(), QString>          constant = u"I am constant"_qs;
+    Property<n(), QString, Notify> notifying = u"I am observing"_qs;
+    Property<n(), QString,  Write>  writable = u"I am modifiable"_qs;
 
     Setter<QString> setWritable = &writable;
 

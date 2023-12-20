@@ -9,8 +9,6 @@ static_assert(QtPrivate::HasQ_OBJECT_Macro<aproperty::AObject>::Value);
 static_assert(QtPrivate::HasQ_OBJECT_Macro<mproperty::MObject>::Value);
 static_assert(QtPrivate::HasQ_OBJECT_Macro<sproperty::SObject>::Value);
 
-using namespace Qt::Literals;
-
 namespace {
 
 #define SHOW(What) qInfo() << #What " =>" << (What)
@@ -92,12 +90,12 @@ private:
         auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
         auto writableSpy  = QSignalSpy{&object, &T::writableChanged};
 
-        const auto  constant1 = u"I am constant"_s;
-        const auto notifying1 = u"I am observing"_s;
-        const auto notifying2 = u"I have been changed per method"_s;
-        const auto  writable1 = u"I am modifiable"_s;
-        const auto  writable2 = u"I have been changed per setter"_s;
-        const auto  metacall1 = u"I have been changed per metacall"_s;
+        const auto  constant1 = u"I am constant"_qs;
+        const auto notifying1 = u"I am observing"_qs;
+        const auto notifying2 = u"I have been changed per method"_qs;
+        const auto  writable1 = u"I am modifiable"_qs;
+        const auto  writable2 = u"I have been changed per setter"_qs;
+        const auto  metacall1 = u"I have been changed per metacall"_qs;
 
         const auto notifyingSpy1 = QList<QVariantList>{};
         const auto notifyingSpy2 = QList<QVariantList>{{notifying2}};
@@ -165,7 +163,7 @@ private:
             QCOMPARE(sizeof(object.writable),           sizeof(QString));
             QCOMPARE(sizeof(object.notifyingChanged),      sizeof(char));
 
-            const auto writable3     = u"I have been changed by assignment"_s;
+            const auto writable3     = u"I have been changed by assignment"_qs;
             const auto writableSpy3  = QList<QVariantList>{{writable2}, {metacall1}, {writable3}};
 
             // object.constant = u"error"_s;    // compile error
@@ -192,18 +190,18 @@ private slots:
 
         QTest::newRow("aproperty")
             << &PropertyTest::testProperties<aproperty::AObject>
-            << "aproperty::AObject"_ba
-            << "QObject"_ba;
+            << QByteArrayView{"aproperty::AObject"}
+            << QByteArrayView{"QObject"};
 
         QTest::newRow("sproperty")
             << &PropertyTest::testProperties<sproperty::SObject>
-            << "sproperty::SObject"_ba
-            << "QObject"_ba;
+            << QByteArrayView{"sproperty::SObject"}
+            << QByteArrayView{"QObject"};
 
         QTest::newRow("mproperty")
             << &PropertyTest::testProperties<mproperty::MObject>
-            << "mproperty::MObject"_ba
-            << "mproperty::MObjectBase"_ba;
+            << QByteArrayView{"mproperty::MObject"}
+            << QByteArrayView{"mproperty::MObjectBase"};
     }
 
     void testProperties()
