@@ -431,9 +431,6 @@ protected:
     template<typename T>
     using Setter = mproperty::Setter<ObjectType, T>;
 
-    // FIXME template<typename T>
-    // using Signal = mproperty::Signal<ObjectType, T>;
-
 public:
 // FIXME: protected or even private
     template<qintptr I, typename T, Feature F>
