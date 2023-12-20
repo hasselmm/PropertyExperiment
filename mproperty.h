@@ -6,12 +6,6 @@
 
 #include <utility>
 
-#if defined(Q_CC_CLANG) && Q_CC_CLANG < 1600
-#define CURRENT_LINE_NUMBER() __builtin_LINE()
-#else
-#define CURRENT_LINE_NUMBER() std::source_location::current().line()
-#endif
-
 namespace mproperty {
 namespace Private {
 
@@ -431,6 +425,23 @@ protected:
     template<typename T>
     using Setter = mproperty::Setter<ObjectType, T>;
 
+#if defined(Q_CC_CLANG) && Q_CC_CLANG < 1600
+
+    static constexpr qintptr n(qintptr l = __builtin_LINE()) noexcept
+    {
+        return l;
+    }
+
+#else // defined(Q_CC_CLANG) && Q_CC_CLANG < 1600
+
+    static constexpr qintptr n(const std::source_location &location =
+                               std::source_location::current()) noexcept
+    {
+        return location.line();
+    }
+
+#endif // defined(Q_CC_CLANG) && Q_CC_CLANG < 1600
+
 public:
 // FIXME: protected or even private
     template<qintptr I, typename T, Feature F>
@@ -454,29 +465,16 @@ public:
             }
         }
     }
-
-protected:
-    static constexpr qintptr n(qintptr l = CURRENT_LINE_NUMBER()) noexcept
-    {
-        return l;
-    }
 };
 
 } // namespace mproperty
-
-#ifdef Q_CC_MSVC
-#define M_OBJECT_VERIFY_LINE_NUMBER_FUNCTION
-#else
-#define M_OBJECT_VERIFY_LINE_NUMBER_FUNCTION \
-static_assert(n() == __LINE__);
-#endif
 
 #define M_OBJECT                                                                \
                                                                                 \
 public:                                                                         \
     static const MetaObject staticMetaObject;                                   \
     int qt_metacall(QMetaObject::Call call, int offset, void **args) override;  \
-    M_OBJECT_VERIFY_LINE_NUMBER_FUNCTION
+    static_assert(n() == __LINE__);
 
 #define M_OBJECT_IMPLEMENTATION(ClassName, ...)                                 \
                                                                                 \
