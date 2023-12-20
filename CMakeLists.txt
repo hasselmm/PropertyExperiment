@@ -30,3 +30,8 @@ install(
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+add_custom_target(
+    Documentation SOURCES
+    LICENSE README.md
+)
