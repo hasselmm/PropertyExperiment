@@ -467,12 +467,19 @@ protected:
 
 } // namespace mproperty
 
+#ifdef Q_CC_MSVC
+#define M_OBJECT_VERIFY_LINE_NUMBER_FUNCTION
+#else
+#define M_OBJECT_VERIFY_LINE_NUMBER_FUNCTION \
+static_assert(n() == __LINE__);
+#endif
+
 #define M_OBJECT                                                                \
                                                                                 \
 public:                                                                         \
     static const MetaObject staticMetaObject;                                   \
     int qt_metacall(QMetaObject::Call call, int offset, void **args) override;  \
-    static_assert(n() == __LINE__);
+    M_OBJECT_VERIFY_LINE_NUMBER_FUNCTION
 
 #define M_OBJECT_IMPLEMENTATION(ClassName, ...)                                 \
                                                                                 \
