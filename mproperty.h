@@ -76,7 +76,7 @@ protected:
 public:
     using PropertyHasWrite = std::conditional<isWritable(), T, typename PropertyHasNotify::type>;
 
-    void set(PropertyHasWrite::type newValue)
+    void set(typename PropertyHasWrite::type newValue)
     {
         if constexpr (isNotifiable()) {
             if (std::exchange(m_value, std::move(newValue)) != m_value)
@@ -86,14 +86,14 @@ public:
         }
     }
 
-    Property &operator=(PropertyHasWrite::type newValue)
+    Property &operator=(typename PropertyHasWrite::type newValue)
     {
         set(std::move(newValue));
         return *this;
     }
 
 protected:
-    void notify(PropertyHasNotify::type newValue)
+    void notify(typename PropertyHasNotify::type newValue)
     {
         for (const auto &p: ObjectType::MetaObject::properties()) {
             if (p.uniqueId() == uniqueId()) {
@@ -110,6 +110,10 @@ private:
 
 struct MetaMethod
 {
+    constexpr MetaMethod() noexcept = default;
+    constexpr MetaMethod(const void *pointer, std::size_t uniqueId) noexcept
+        : pointer{pointer}, uniqueId{uniqueId} {}
+
     const void *pointer;
     std::size_t uniqueId;
 };
