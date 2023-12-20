@@ -92,16 +92,38 @@ public:
         return *this;
     }
 
+public: // FIXME: maybe mark these accessors protected or private
+    qintptr address() const noexcept
+    {
+        return reinterpret_cast<qintptr>(this);
+    }
+
+    qintptr offset() const noexcept
+    {
+        for (const auto &p: ObjectType::MetaObject::properties())
+            if (p.uniqueId() == uniqueId())
+                return p.offset();
+
+        return 0u;
+    }
+
+    ObjectType *object() const noexcept
+    {
+        for (const auto &p: ObjectType::MetaObject::properties()) {
+            if (p.uniqueId() == uniqueId())
+                return reinterpret_cast<ObjectType *>(address() - p.offset());
+        }
+
+        return nullptr;
+    }
+
 protected:
     void notify(typename PropertyHasNotify::type newValue)
     {
-        for (const auto &p: ObjectType::MetaObject::properties()) {
-            if (p.uniqueId() == uniqueId()) {
-                const auto address = reinterpret_cast<char *>(this) - p.offset();
-                const auto object = reinterpret_cast<ObjectType *>(address);
-                (object->*ObjectType::signalProxy(this))(std::move(newValue));
-            }
-        }
+        const auto target = object();
+        Q_ASSERT(target != nullptr);
+
+        (target->*ObjectType::signalProxy(this))(std::move(newValue));
     }
 
 private:
@@ -377,10 +399,8 @@ template<auto property>
 class Signal
 {
 public:
-    constexpr auto operator&() const noexcept
-    {
-        return notifyMethod(property);
-    }
+    constexpr auto get() const noexcept { return notifyMethod(property); }
+    constexpr auto operator&() const noexcept { return get(); }
 };
 
 ///

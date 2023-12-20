@@ -85,6 +85,21 @@ private:
         QCOMPARE(writable.isConstant(),         false);
         QCOMPARE(writable.hasNotifySignal(),     true);
 
+        if constexpr (std::is_same_v<T, mproperty::MObject>) {
+            const auto objectAddress = reinterpret_cast<qintptr>(&object);
+
+            QCOMPARE(object. constant.offset() + objectAddress, object. constant.address());
+            QCOMPARE(object.notifying.offset() + objectAddress, object.notifying.address());
+            QCOMPARE(object. writable.offset() + objectAddress, object. writable.address());
+
+            QCOMPARE(object. constant.object(), &object);
+            QCOMPARE(object.notifying.object(), &object);
+            QCOMPARE(object. writable.object(), &object);
+
+            QCOMPARE(object.notifyingChanged.get(), &object.notifyingChanged);
+            QCOMPARE(object. writableChanged.get(), &object. writableChanged);
+        }
+
         QVERIFY(&T::notifyingChanged != &T::writableChanged);
 
         auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
