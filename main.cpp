@@ -191,17 +191,17 @@ private slots:
         QTest::addColumn<QByteArray>("expectedSuperClassName");
 
         QTest::newRow("aproperty")
-            << &testProperties<aproperty::AObject>
+            << &PropertyTest::testProperties<aproperty::AObject>
             << "aproperty::AObject"_ba
             << "QObject"_ba;
 
         QTest::newRow("sproperty")
-            << &testProperties<sproperty::SObject>
+            << &PropertyTest::testProperties<sproperty::SObject>
             << "sproperty::SObject"_ba
             << "QObject"_ba;
 
         QTest::newRow("mproperty")
-            << &testProperties<mproperty::MObject>
+            << &PropertyTest::testProperties<mproperty::MObject>
             << "mproperty::MObject"_ba
             << "mproperty::MObjectBase"_ba;
     }
