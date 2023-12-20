@@ -24,6 +24,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
         c_compiler: [gcc, clang-15, cl]
+        qt_version: [5.15.2, 6.5.3, 6.7.0]
         include:
           - os: windows-latest
             c_compiler: cl
@@ -47,9 +48,9 @@ jobs:
 
     - uses: jurplel/install-qt-action@v3.3.0
       with:
-        version: 6.5.3
+        version: $${{ matrix.qt_version }}
         cache: true
-      
+
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
