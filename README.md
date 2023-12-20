@@ -33,6 +33,23 @@ public:
 
 The code works. I am pretty happy with the syntax of `MyObject`.
 
+Actually the `Setter` and the `Signal` fields in this class are just
+syntactical sugar to preserve the API we got used to over the years.
+You can fully omit them, and still get functional properties and signal:
+
+``` C++
+    // properties support simple assignment
+    object.property = "new value";
+    qInfo() << object.property;
+
+    // alternatively there also are setter and getter methods
+    object.property.set("new value");
+    qInfo() << object.property.get();
+
+    // connecting to connect to a signal without Signal<> field
+    connect(object, notifyMethod(&Object::property), ...);
+```
+
 > [!IMPORTANT]
 > Still this is just an experiment, a _proof of concept_. Many FIXMEs,
 > lots of chances for improvement. Let me hear, what you think about it.
