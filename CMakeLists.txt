@@ -10,7 +10,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Test)
+
 include(GNUInstallDirs)
+enable_testing()
 
 add_executable(
     PropertyExperiment
@@ -24,6 +26,11 @@ add_executable(
 )
 
 target_link_libraries(PropertyExperiment Qt::CorePrivate Qt::Test)
+
+add_test(
+    NAME PropertyExperiment
+    COMMAND $<TARGET_FILE:PropertyExperiment>
+)
 
 install(
     TARGETS PropertyExperiment
