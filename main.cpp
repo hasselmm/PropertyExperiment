@@ -13,7 +13,7 @@ namespace {
 
 #define SHOW(What) qInfo() << #What " =>" << (What)
 
-class PropertyTest: public QObject
+class PropertyExperiment: public QObject
 {
     Q_OBJECT
 
@@ -222,17 +222,17 @@ private slots:
         QTest::addColumn<QByteArrayView>("expectedSuperClassName");
 
         QTest::newRow("aproperty")
-            << &PropertyTest::testProperties<aproperty::AObject>
+            << &PropertyExperiment::testProperties<aproperty::AObject>
             << QByteArrayView{"aproperty::AObject"}
             << QByteArrayView{"QObject"};
 
         QTest::newRow("sproperty")
-            << &PropertyTest::testProperties<sproperty::SObject>
+            << &PropertyExperiment::testProperties<sproperty::SObject>
             << QByteArrayView{"sproperty::SObject"}
             << QByteArrayView{"QObject"};
 
         QTest::newRow("mproperty")
-            << &PropertyTest::testProperties<mproperty::MObject>
+            << &PropertyExperiment::testProperties<mproperty::MObject>
             << QByteArrayView{"mproperty::MObject"}
             << QByteArrayView{"mproperty::MObjectBase"};
     }
@@ -246,6 +246,6 @@ private slots:
 
 } // namespace
 
-QTEST_MAIN(PropertyTest)
+QTEST_MAIN(PropertyExperiment)
 
 #include "main.moc"
