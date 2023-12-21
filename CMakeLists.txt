@@ -20,9 +20,9 @@ add_executable(
 
     aobject/aobject.cpp     aobject/aobject.h
     aobject/aproperty.cpp   aobject/aproperty.h
-    mobject/mobject.h       mobject/mobject.cpp
+    mobject/mobject.cpp     mobject/mobject.h
     mobject/mproperty.cpp   mobject/mproperty.h
-    sobject/sobject.cpp     sobject/sobject.cpp
+    sobject/sobject.cpp     sobject/sobject.h
 )
 
 target_link_libraries(PropertyExperiment Qt::CorePrivate Qt::Test)
