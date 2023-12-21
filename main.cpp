@@ -5,48 +5,98 @@
 #include <QSignalSpy>
 #include <QTest>
 
-static_assert(QtPrivate::HasQ_OBJECT_Macro<aproperty::AObject>::Value);
-static_assert(QtPrivate::HasQ_OBJECT_Macro<mproperty::MObject>::Value);
-static_assert(QtPrivate::HasQ_OBJECT_Macro<sproperty::SObject>::Value);
-
 namespace {
 
+/// Just a tiny wrapper with simple name for the pretty verbose
+/// `!std::is_member_function_pointer_v<decltype(&T::member)>`.
+///
+template<auto pointer>
+constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
+                              && !std::is_member_function_pointer_v<decltype(pointer)>;
+
+/// Simply show an expression and its value.
+///
 #define SHOW(What) qInfo() << #What " =>" << (What)
 
 class PropertyExperiment: public QObject
 {
     Q_OBJECT
 
+    /// --------------------------------------------------------------------------------------------
+    /// Normally one would just make the type under test template argument of this class.
+    /// Unfortunately moc doesn't support template types. Therefore a different approach
+    /// is needed here to provide (almost) identical tests for each property system.
+    ///
+    /// The actual tests are implemented in template functions. The _data() slots of each
+    /// test simply push a type erased delegate to the test data set, which then is run
+    /// by the actual test slot. Sounds complicated, but isn't too much. Foremost it's
+    /// pretty canonical as you can see below.
+    /// --------------------------------------------------------------------------------------------
+
+private slots:
+    void testMetaObject()                                           { runTestFunction(); }
+    void testMetaObject_data()                     { makeTestData<MetaObjectDelegate>(); }
+
+    void testPropertyDefinitions()                                  { runTestFunction(); }
+    void testPropertyDefinitions_data()   { makeTestData<PropertyDefinitionsDelegate>(); }
+
+    void testUniquePropertyIds()                                    { runTestFunction(); }
+    void testUniquePropertyIds_data()       { makeTestData<UniquePropertyIdsDelegate>(); }
+
+    void testPropertyAddresses()                                    { runTestFunction(); }
+    void testPropertyAddresses_data()       { makeTestData<PropertyAddressesDelegate>(); }
+
+    void testSignalAddresses()                                      { runTestFunction(); }
+    void testSignalAddresses_data()           { makeTestData<SignalAddressesDelegate>(); }
+
+    void testPropertyChanges()                                      { runTestFunction(); }
+    void testPropertyChanges_data()           { makeTestData<PropertyChangesDelegate>(); }
+
 private:
+
+    /// --------------------------------------------------------------------------------------------
+    /// An initial test for the most basic properties of the generated QMetaObjects
+    /// --------------------------------------------------------------------------------------------
+
     template <class T>
-    static void testProperties()
+    static void testMetaObject(T &object)
     {
-        const QFETCH(QByteArrayView, expectedClassName);
-        const QFETCH(QByteArrayView, expectedSuperClassName);
+        const auto metaType = QMetaType::fromType<T>();
+        const auto metaObject = T::staticMetaObject;
 
-        const auto typeName = QMetaType::fromType<T>().name();
-        QCOMPARE(typeName, expectedClassName);
-
-        auto object = T{};
-        const auto &metaObject = object.staticMetaObject;
+        static_assert(QtPrivate::HasQ_OBJECT_Macro<T>::Value);
+        static_assert(std::is_convertible_v<decltype(metaObject), QMetaObject>);
 
         SHOW(sizeof(object));
 
-        if constexpr (!std::is_same_v<T, sproperty::SObject>) {
-            SHOW(sizeof(object.constant));
-            SHOW(sizeof(object.notifying));
-            SHOW(sizeof(object.writable));
-            SHOW(sizeof(QString));
-        }
+        const QFETCH(QByteArray, expectedClassName);
+        const QFETCH(QByteArray, expectedSuperClassName);
 
-        QCOMPARE(metaObject.className(), typeName);
+        QCOMPARE(metaType.name(), expectedClassName);
+        QCOMPARE(metaObject.className(), expectedClassName);
         QCOMPARE(metaObject.superClass()->className(), expectedSuperClassName);
         QCOMPARE(metaObject.propertyCount(), 4);
         QCOMPARE(metaObject.methodCount(), 7);
+    }
 
-        const auto constant  = metaObject.property(1);
-        const auto notifying = metaObject.property(2);
-        const auto writable  = metaObject.property(3);
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that the generated properties look like expected.
+    /// --------------------------------------------------------------------------------------------
+
+    template <class T>
+    static void testPropertyDefinitions(T &object)
+    {
+        const auto metaObject = T::staticMetaObject;
+        const auto constant   = metaObject.property(1);
+        const auto notifying  = metaObject.property(2);
+        const auto writable   = metaObject.property(3);
+
+        if constexpr (isDataMember<&T::constant>)
+            SHOW(sizeof(T::constant));
+        if constexpr (isDataMember<&T::notifying>)
+            SHOW(sizeof(T::notifying));
+        if constexpr (isDataMember<&T::writable>)
+            SHOW(sizeof(T::writable));
 
         QVERIFY (constant.isValid());
         QCOMPARE(constant.name(),          "constant");
@@ -66,7 +116,7 @@ private:
         QCOMPARE(constant.isEnumType(),         false);
         QCOMPARE(constant.hasNotifySignal(),    false);
         QCOMPARE(constant.revision(),               0);
-        QCOMPARE(constant.hasStdCppSet(),       false); // FIXME why is this false for AObject?
+        QCOMPARE(constant.hasStdCppSet(),       false); // FIXME why is this false for SObject?
         QCOMPARE(constant.isAlias(),            false);
 
         QVERIFY (notifying.isValid());
@@ -84,43 +134,87 @@ private:
         QCOMPARE(writable.isWritable(),          true);
         QCOMPARE(writable.isConstant(),         false);
         QCOMPARE(writable.hasNotifySignal(),     true);
+    }
 
-        if constexpr (std::is_same_v<T, mproperty::MObject>) {
-            const auto uniquePropertyIds = QSet{object. constant.uniqueId(),
-                                                object.notifying.uniqueId(),
-                                                object. writable.uniqueId()};
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that properties have unique ids if the type system needs this.
+    /// --------------------------------------------------------------------------------------------
 
-            SHOW(uniquePropertyIds); // for manual verification that Object::n() works
-            QCOMPARE(uniquePropertyIds.size(), 3);
+    template <class T>
+    static void testUniquePropertyIds(T &)
+    {}
 
-            const auto uniquePropertyOffsets = QSet{object. constant.offset(),
-                                                    object.notifying.offset(),
-                                                    object. writable.offset()};
+    static void testUniquePropertyIds(mproperty::MObject &object)
+    {
+        const auto uniqueIds = QSet{object. constant.uniqueId(),
+                                    object.notifying.uniqueId(),
+                                    object. writable.uniqueId()};
 
-            QCOMPARE(uniquePropertyOffsets.size(), 3);
+        QCOMPARE(uniqueIds.size(), 3);
 
-            const auto uniquePropertyAddresses = QSet{object. constant.address(),
-                                                      object.notifying.address(),
-                                                      object. writable.address()};
+        const auto uniqueOffsets = QSet{object. constant.offset(),
+                                        object.notifying.offset(),
+                                        object. writable.offset()};
 
-            QCOMPARE(uniquePropertyAddresses.size(), 3);
+        QCOMPARE(uniqueOffsets.size(), 3);
 
-            const auto objectAddress = reinterpret_cast<qintptr>(&object);
+        const auto uniqueAddresses = QSet{object. constant.address(),
+                                          object.notifying.address(),
+                                          object. writable.address()};
 
-            QCOMPARE(object. constant.offset() + objectAddress, object. constant.address());
-            QCOMPARE(object.notifying.offset() + objectAddress, object.notifying.address());
-            QCOMPARE(object. writable.offset() + objectAddress, object. writable.address());
+        QCOMPARE(uniqueAddresses.size(), 3);
 
-            QCOMPARE(object. constant.object(), &object);
-            QCOMPARE(object.notifying.object(), &object);
-            QCOMPARE(object. writable.object(), &object);
+        testUniquePropertyIds<mproperty::MObject>(object);
+    }
 
-            QCOMPARE(object.notifyingChanged.get(), &object.notifyingChanged);
-            QCOMPARE(object. writableChanged.get(), &object. writableChanged);
-        }
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that properties have reasonable addresses they can use their signals.
+    /// --------------------------------------------------------------------------------------------
 
+    template <class T>
+    static void testPropertyAddresses(T &)
+    {}
+
+    static void testPropertyAddresses(mproperty::MObject &object)
+    {
+        const auto objectAddress = reinterpret_cast<qintptr>(&object);
+
+        QCOMPARE(object. constant.offset() + objectAddress, object. constant.address());
+        QCOMPARE(object.notifying.offset() + objectAddress, object.notifying.address());
+        QCOMPARE(object. writable.offset() + objectAddress, object. writable.address());
+
+        QCOMPARE(object. constant.object(), &object);
+        QCOMPARE(object.notifying.object(), &object);
+        QCOMPARE(object. writable.object(), &object);
+
+        testPropertyAddresses<mproperty::MObject>(object);
+    }
+
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that signals have reasonable addresses for QObject::connect().
+    /// --------------------------------------------------------------------------------------------
+
+    template <class T>
+    static void testSignalAddresses(T &)
+    {
         QVERIFY(&T::notifyingChanged != &T::writableChanged);
+    }
 
+    static void testSignalAddresses(mproperty::MObject &object)
+    {
+        QCOMPARE(object.notifyingChanged.get(), &object.notifyingChanged);
+        QCOMPARE(object. writableChanged.get(), &object. writableChanged);
+
+        testSignalAddresses<mproperty::MObject>(object);
+    }
+
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that properties can be changed, and emit the expected signals.
+    /// --------------------------------------------------------------------------------------------
+
+    template <class T>
+    static void testPropertyChanges(T &object)
+    {
         auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
         auto writableSpy  = QSignalSpy{&object, &T::writableChanged};
 
@@ -212,35 +306,71 @@ private:
         }
     }
 
-    using TestPropertiesFunction = void (*)();
-
-private slots:
-    void testProperties_data()
+    static void testPropertyChanges(mproperty::MObject &object)
     {
-        QTest::addColumn<TestPropertiesFunction>("testRoutine");
-        QTest::addColumn<QByteArrayView>("expectedClassName");
-        QTest::addColumn<QByteArrayView>("expectedSuperClassName");
-
-        QTest::newRow("aproperty")
-            << &PropertyExperiment::testProperties<aproperty::AObject>
-            << QByteArrayView{"aproperty::AObject"}
-            << QByteArrayView{"QObject"};
-
-        QTest::newRow("sproperty")
-            << &PropertyExperiment::testProperties<sproperty::SObject>
-            << QByteArrayView{"sproperty::SObject"}
-            << QByteArrayView{"QObject"};
-
-        QTest::newRow("mproperty")
-            << &PropertyExperiment::testProperties<mproperty::MObject>
-            << QByteArrayView{"mproperty::MObject"}
-            << QByteArrayView{"mproperty::MObjectBase"};
+        testPropertyChanges<mproperty::MObject>(object);
+        qInfo("BAR");
     }
 
-    void testProperties()
+    /// --------------------------------------------------------------------------------------------
+    /// Some support functions to provide same test environment for all property systems.
+    /// --------------------------------------------------------------------------------------------
+
+    void runTestFunction()
     {
-        const QFETCH(TestPropertiesFunction, testRoutine);
-        testRoutine();
+        const QFETCH(TestFunction, testFunction);
+        testFunction();
+    }
+
+    using TestFunction = void (*)();
+
+    struct NullDelegate
+    {
+        static void run(auto &) {}
+    };
+
+#define DEFINE_FUNCTION_DELEGATE(Name)                                  \
+    struct Name##Delegate                                               \
+    {                                                                   \
+        static void run(auto &o) { PropertyExperiment::test##Name(o); } \
+    };
+
+    DEFINE_FUNCTION_DELEGATE(MetaObject)
+    DEFINE_FUNCTION_DELEGATE(PropertyDefinitions)
+    DEFINE_FUNCTION_DELEGATE(UniquePropertyIds)
+    DEFINE_FUNCTION_DELEGATE(PropertyAddresses)
+    DEFINE_FUNCTION_DELEGATE(SignalAddresses)
+    DEFINE_FUNCTION_DELEGATE(PropertyChanges)
+
+#undef DEFINE_FUNCTION_DELEGATE
+
+    template<class FunctionDelegate = NullDelegate>
+    void makeTestData(const NullDelegate * = nullptr)
+    {
+        QTest::addColumn<TestFunction>  ("testFunction");
+        QTest::addColumn<QByteArray>    ("expectedClassName");
+        QTest::addColumn<QByteArray>    ("expectedSuperClassName");
+
+        makeTestRow<FunctionDelegate, aproperty::AObject>
+            ("aproperty", "aproperty::AObject");
+        makeTestRow<FunctionDelegate, mproperty::MObject>
+            ("mproperty", "mproperty::MObject", "mproperty::MObjectBase");
+        makeTestRow<FunctionDelegate, sproperty::SObject>
+            ("sproperty", "sproperty::SObject");
+    }
+
+    template<class FunctionDelegate, class T>
+    void makeTestRow(const char *tag, QByteArray className,
+                     QByteArray superName = "QObject")
+    {
+        const auto function = [] {
+            auto object = T{};
+            FunctionDelegate::run(object);
+        };
+
+        QTest::newRow(tag)
+            << static_cast<TestFunction>(function)
+            << className << superName;
     }
 };
 
