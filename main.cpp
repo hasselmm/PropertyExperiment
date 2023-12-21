@@ -1,5 +1,6 @@
 #include "aobject/aobjecttest.h"
 #include "mobject/mobjecttest.h"
+#include "nobject/nobjecttest.h"
 #include "sobject/sobjecttest.h"
 
 #include <QSignalSpy>
@@ -56,6 +57,19 @@ template<> constexpr auto implementedFeatures<sproperty::SObject>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
       & ~PropertyAddresses      // properties do not have their own objects with moc
       & ~NotifyPointers         // properties do not have their own objects with moc
+    ;
+
+template<> constexpr uint skippedFeatures<nproperty::NObject>
+    = skippedFeatures<>
+      | MetaObject
+      | PropertyDefinitions
+      | UniquePropertyIds
+      | PropertyAddresses
+      | MethodDefinitions
+      | SignalAddresses
+      | PropertyChanges
+      | PropertyNotifications
+      | NotifyPointers
     ;
 
 /// Just a tiny wrapper with simple name for the pretty verbose
@@ -149,6 +163,47 @@ private slots:
 
     void testPropertyNotifications()        { runTestFunction(); }
     void testPropertyNotifications_data()   { MAKE_TESTDATA(testPropertyNotifications); }
+
+    void testNObject()
+    {
+        auto object = nproperty::HelloWorld{};
+
+        SHOW(object.hello.index());
+        SHOW(object.world.index());
+
+        SHOW(object.hello.name());
+        SHOW(object.world.name());
+
+        SHOW(object.hello.value());
+        SHOW(object.world.value());
+
+        SHOW(object.hello());
+        SHOW(object.world());
+
+        SHOW(object.hello);
+        SHOW(object.world);
+
+        const auto indices = QSet{object.hello.index(),
+                                  object.world.index()};
+
+        QCOMPARE(indices.count(), 2);
+
+        QCOMPARE(object.hello.name(), "hello");
+        QCOMPARE(object.world.name(), "world");
+
+        SHOW(object.hello.features().value);
+        SHOW(object.world.features().value);
+
+        static_assert( object.hello.isReadable());
+        static_assert(!object.hello.isResetable());
+        static_assert(!object.hello.isNotifiable());
+        static_assert(!object.hello.isWritable());
+
+        static_assert( object.world.isReadable());
+        static_assert(!object.world.isResetable());
+        static_assert( object.world.isNotifiable());
+        static_assert( object.world.isWritable());
+    }
 
 private:
 
@@ -626,11 +681,14 @@ private:
         makeTestRow<Delegate, mproperty::MObject>("mproperty",
                                                   "mproperty::MObject",
                                                   "mproperty::MObjectBase");
+        makeTestRow<Delegate, nproperty::NObject>("nproperty",
+                                                  "nproperty::NObject",
+                                                  "nproperty::NObjectBase");
         makeTestRow<Delegate, sproperty::SObject>("sproperty",
                                                   "sproperty::SObject");
     }
 
-    template<class Delegate, class T>
+    template<typename Delegate, class T>
     void makeTestRow(const char *tag,
                      QByteArray  className,
                      QByteArray  superName = "QObject")
