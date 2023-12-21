@@ -1,6 +1,6 @@
-#include "aobject.h"
-#include "mobject.h"
-#include "sobject.h"
+#include "aobject/aobject.h"
+#include "mobject/mobject.h"
+#include "sobject/sobject.h"
 
 #include <QSignalSpy>
 #include <QTest>

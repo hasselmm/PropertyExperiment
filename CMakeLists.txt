@@ -18,11 +18,11 @@ add_executable(
     PropertyExperiment
     main.cpp
 
-    aobject.cpp     aobject.h
-    aproperty.cpp   aproperty.h
-    mobject.h       mobject.cpp
-    mproperty.cpp   mproperty.h
-    sobject.h sobject.cpp
+    aobject/aobject.cpp     aobject/aobject.h
+    aobject/aproperty.cpp   aobject/aproperty.h
+    mobject/mobject.h       mobject/mobject.cpp
+    mobject/mproperty.cpp   mobject/mproperty.h
+    sobject/sobject.cpp     sobject/sobject.cpp
 )
 
 target_link_libraries(PropertyExperiment Qt::CorePrivate Qt::Test)
