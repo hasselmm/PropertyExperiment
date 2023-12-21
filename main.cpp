@@ -110,6 +110,10 @@ private:
         const QFETCH(QByteArray, expectedClassName);
         const QFETCH(QByteArray, expectedSuperClassName);
 
+        QVERIFY(metaObject.d.data);
+        QVERIFY(metaObject.className() != nullptr);
+        QVERIFY(metaObject.superClass() != nullptr);
+
         QCOMPARE(metaType.name(), expectedClassName);
         QCOMPARE(metaObject.className(), expectedClassName);
         QCOMPARE(metaObject.superClass()->className(), expectedSuperClassName);
@@ -125,13 +129,15 @@ private:
     static void testPropertyDefinitions(T &object)
     {
         const auto metaObject = T::staticMetaObject;
-        const auto offset     = T::staticMetaObject.propertyOffset();
 
-        QCOMPARE(offset, QObject::staticMetaObject.propertyCount());
+        QVERIFY(metaObject.d.data);
 
+        const auto offset     = metaObject.propertyOffset();
         const auto constant   = metaObject.property(offset + 0);
         const auto notifying  = metaObject.property(offset + 1);
         const auto writable   = metaObject.property(offset + 2);
+
+        QCOMPARE(offset, QObject::staticMetaObject.propertyCount());
 
         QVERIFY (constant.isValid());
         QCOMPARE(constant.name(),          "constant");
@@ -233,12 +239,14 @@ private:
     static void testMethodDefinitions(T &object)
     {
         const auto metaObject = T::staticMetaObject;
-        const auto offset     = T::staticMetaObject.methodOffset();
 
-        QCOMPARE(offset, QObject::staticMetaObject.methodCount());
+        QVERIFY(metaObject.d.data);
 
+        const auto offset            = metaObject.methodOffset();
         const auto notifyingChanged  = metaObject.method(offset + 0);
         const auto writableChanged   = metaObject.method(offset + 1);
+
+        QCOMPARE(offset, QObject::staticMetaObject.methodCount());
 
         QVERIFY (notifyingChanged.isValid());
         QCOMPARE(notifyingChanged.name(),                     "notifyingChanged");
