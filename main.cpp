@@ -92,11 +92,13 @@ private:
         const auto writable   = metaObject.property(3);
 
         if constexpr (isDataMember<&T::constant>)
-            SHOW(sizeof(T::constant));
+            QCOMPARE(sizeof(T::constant), sizeof(QString));
         if constexpr (isDataMember<&T::notifying>)
             SHOW(sizeof(T::notifying));
         if constexpr (isDataMember<&T::writable>)
             SHOW(sizeof(T::writable));
+
+        SHOW(sizeof(QString));
 
         QVERIFY (constant.isValid());
         QCOMPARE(constant.name(),          "constant");
