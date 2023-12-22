@@ -73,6 +73,9 @@ private slots:
     void testPropertyAddresses()        { runTestFunction(); }
     void testPropertyAddresses_data()   { MAKE_TESTDATA(testPropertyAddresses); }
 
+    void testMethodDefinitions()        { runTestFunction(); }
+    void testMethodDefinitions_data()   { MAKE_TESTDATA(testMethodDefinitions); }
+
     void testSignalAddresses()          { runTestFunction(); }
     void testSignalAddresses_data()     { MAKE_TESTDATA(testSignalAddresses); }
 
@@ -220,6 +223,48 @@ private:
         QCOMPARE(object. writable.object(), &object);
 
         testPropertyAddresses<mproperty::MObject>(object);
+    }
+
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that the generated methods look like expected.
+    /// --------------------------------------------------------------------------------------------
+
+    template <class T>
+    static void testMethodDefinitions(T &object)
+    {
+        const auto metaObject = T::staticMetaObject;
+        const auto offset     = T::staticMetaObject.methodOffset();
+
+        QCOMPARE(offset, QObject::staticMetaObject.methodCount());
+
+        const auto notifyingChanged  = metaObject.method(offset + 0);
+        const auto writableChanged   = metaObject.method(offset + 1);
+
+        QVERIFY (notifyingChanged.isValid());
+        QCOMPARE(notifyingChanged.name(),                     "notifyingChanged");
+        QCOMPARE(notifyingChanged.typeName(),                             "void");
+        QCOMPARE(notifyingChanged.methodSignature(), "notifyingChanged(QString)");
+        QCOMPARE(notifyingChanged.methodType(),  QMetaMethod::MethodType::Signal);
+        QCOMPARE(notifyingChanged.access(),          QMetaMethod::Access::Public);
+        QCOMPARE(notifyingChanged.isConst(),                               false);
+        QCOMPARE(notifyingChanged.revision(),                                  0);
+        QCOMPARE(notifyingChanged.tag(),                                      "");
+        QCOMPARE(notifyingChanged.parameterCount(),                            1);
+        QCOMPARE(notifyingChanged.parameterTypeName(0),                "QString");
+        QCOMPARE(notifyingChanged.parameterNames().at(0),            "notifying");
+
+        QVERIFY (writableChanged.isValid());
+        QCOMPARE(writableChanged.name(),                       "writableChanged");
+        QCOMPARE(writableChanged.typeName(),                              "void");
+        QCOMPARE(writableChanged.methodSignature(),   "writableChanged(QString)");
+        QCOMPARE(writableChanged.methodType(),   QMetaMethod::MethodType::Signal);
+        QCOMPARE(writableChanged.access(),           QMetaMethod::Access::Public);
+        QCOMPARE(writableChanged.isConst(),                                false);
+        QCOMPARE(writableChanged.revision(),                                   0);
+        QCOMPARE(writableChanged.tag(),                                       "");
+        QCOMPARE(writableChanged.parameterCount(),                             1);
+        QCOMPARE(writableChanged.parameterTypeName(0),                 "QString");
+        QCOMPARE(writableChanged.parameterNames().at(0),              "writable");
     }
 
     /// --------------------------------------------------------------------------------------------
