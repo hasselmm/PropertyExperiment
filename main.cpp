@@ -18,6 +18,13 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
 ///
 #define SHOW(What) qInfo() << #What " =>" << (What)
 
+/// Allow to run templated test function for different types
+///
+#define MAKE_TESTDATA(TestFunction) \
+    makeTestData<decltype([](auto &object) { \
+        TestFunction(object); \
+    })>()
+
 class PropertyExperiment: public QObject
 {
     Q_OBJECT
@@ -34,23 +41,23 @@ class PropertyExperiment: public QObject
     /// --------------------------------------------------------------------------------------------
 
 private slots:
-    void testMetaObject()                                           { runTestFunction(); }
-    void testMetaObject_data()                     { makeTestData<MetaObjectDelegate>(); }
+    void testMetaObject()               { runTestFunction(); }
+    void testMetaObject_data()          { MAKE_TESTDATA(testMetaObject); }
 
-    void testPropertyDefinitions()                                  { runTestFunction(); }
-    void testPropertyDefinitions_data()   { makeTestData<PropertyDefinitionsDelegate>(); }
+    void testPropertyDefinitions()      { runTestFunction(); }
+    void testPropertyDefinitions_data() { MAKE_TESTDATA(testPropertyDefinitions); }
 
-    void testUniquePropertyIds()                                    { runTestFunction(); }
-    void testUniquePropertyIds_data()       { makeTestData<UniquePropertyIdsDelegate>(); }
+    void testUniquePropertyIds()        { runTestFunction(); }
+    void testUniquePropertyIds_data()   { MAKE_TESTDATA(testUniquePropertyIds); }
 
-    void testPropertyAddresses()                                    { runTestFunction(); }
-    void testPropertyAddresses_data()       { makeTestData<PropertyAddressesDelegate>(); }
+    void testPropertyAddresses()        { runTestFunction(); }
+    void testPropertyAddresses_data()   { MAKE_TESTDATA(testPropertyAddresses); }
 
-    void testSignalAddresses()                                      { runTestFunction(); }
-    void testSignalAddresses_data()           { makeTestData<SignalAddressesDelegate>(); }
+    void testSignalAddresses()          { runTestFunction(); }
+    void testSignalAddresses_data()     { MAKE_TESTDATA(testSignalAddresses); }
 
-    void testPropertyChanges()                                      { runTestFunction(); }
-    void testPropertyChanges_data()           { makeTestData<PropertyChangesDelegate>(); }
+    void testPropertyChanges()          { runTestFunction(); }
+    void testPropertyChanges_data()     { MAKE_TESTDATA(testPropertyChanges); }
 
 private:
 
@@ -326,48 +333,30 @@ private:
 
     using TestFunction = void (*)();
 
-    struct NullDelegate
-    {
-        static void run(auto &) {}
-    };
-
-#define DEFINE_FUNCTION_DELEGATE(Name)                                  \
-    struct Name##Delegate                                               \
-    {                                                                   \
-        static void run(auto &o) { PropertyExperiment::test##Name(o); } \
-    };
-
-    DEFINE_FUNCTION_DELEGATE(MetaObject)
-    DEFINE_FUNCTION_DELEGATE(PropertyDefinitions)
-    DEFINE_FUNCTION_DELEGATE(UniquePropertyIds)
-    DEFINE_FUNCTION_DELEGATE(PropertyAddresses)
-    DEFINE_FUNCTION_DELEGATE(SignalAddresses)
-    DEFINE_FUNCTION_DELEGATE(PropertyChanges)
-
-#undef DEFINE_FUNCTION_DELEGATE
-
-    template<class FunctionDelegate = NullDelegate>
-    void makeTestData(const NullDelegate * = nullptr)
+    template<class Delegate>
+    void makeTestData()
     {
         QTest::addColumn<TestFunction>  ("testFunction");
         QTest::addColumn<QByteArray>    ("expectedClassName");
         QTest::addColumn<QByteArray>    ("expectedSuperClassName");
 
-        makeTestRow<FunctionDelegate, aproperty::AObject>
-            ("aproperty", "aproperty::AObject");
-        makeTestRow<FunctionDelegate, mproperty::MObject>
-            ("mproperty", "mproperty::MObject", "mproperty::MObjectBase");
-        makeTestRow<FunctionDelegate, sproperty::SObject>
-            ("sproperty", "sproperty::SObject");
+        makeTestRow<Delegate, aproperty::AObject>("aproperty",
+                                                  "aproperty::AObject");
+        makeTestRow<Delegate, mproperty::MObject>("mproperty",
+                                                  "mproperty::MObject",
+                                                  "mproperty::MObjectBase");
+        makeTestRow<Delegate, sproperty::SObject>("sproperty",
+                                                  "sproperty::SObject");
     }
 
-    template<class FunctionDelegate, class T>
-    void makeTestRow(const char *tag, QByteArray className,
-                     QByteArray superName = "QObject")
+    template<class Delegate, class T>
+    void makeTestRow(const char *tag,
+                     QByteArray  className,
+                     QByteArray  superName = "QObject")
     {
         const auto function = [] {
             auto object = T{};
-            FunctionDelegate::run(object);
+            Delegate{}(object);
         };
 
         QTest::newRow(tag)
