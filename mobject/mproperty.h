@@ -287,8 +287,9 @@ public:
             propertyBuilder.setFinal(true);
 
             if (p.notifyPointer()) {
-                auto signature = propertyBuilder.name() + "(" + p.type().name() + ")";
+                auto signature = propertyBuilder.name() + "Changed(" + p.type().name() + ")";
                 auto notifyBuilder = objectBuilder.addSignal(std::move(signature));
+                notifyBuilder.setParameterNames({propertyBuilder.name()});
                 propertyBuilder.setNotifySignal(std::move(notifyBuilder));
             } else {
                 propertyBuilder.setConstant(true);
