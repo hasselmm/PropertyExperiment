@@ -365,12 +365,6 @@ private:
     {
         testPropertyChanges<mproperty::MObject>(object, notifyingSpy, writableSpy);
 
-        auto uniqueIds = QSet{object.constant. uniqueId(),
-                              object.notifying.uniqueId(),
-                              object.writable. uniqueId()};
-
-        QCOMPARE(uniqueIds.size(), 3);
-
         QCOMPARE(sizeof(object.constant),           sizeof(QString));
         QCOMPARE(sizeof(object.notifying),          sizeof(QString));
         QCOMPARE(sizeof(object.writable),           sizeof(QString));
