@@ -2,8 +2,10 @@
 #define NPROPERTY_NPROPERTY_H
 
 #include "nproperty_p.h"
+#include "qtypes.h"
 
 #include <QMetaObject>
+#include <QMetaType>
 
 #include <source_location>
 
@@ -19,7 +21,11 @@ public:                                                                         
     static const MetaObject staticMetaObject;                                   \
                                                                                 \
 private:                                                                        \
-    static constexpr quintptr offset = __LINE__;
+    template <quintptr N>                                                       \
+    static consteval detail::MemberInfo member(detail::Tag<N>) { return {}; }   \
+    static consteval quintptr lineOffset() { return __LINE__; }                 \
+    friend MetaObject;                                                          \
+    friend Object;
 
 
 /// This macro just defines the static metaobject of this class. This cannot
@@ -49,7 +55,9 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 /// Property<QString, name("legacy", __LINE__)> legacy;
 /// ```
 ///
-#define N_PROPERTY(Type, Name, ...) \
+#define N_PROPERTY(Type, Name, ...)                                             \
+static consteval detail::MemberInfo member(detail::Tag<__LINE__>)               \
+{ return {static_cast<decltype(Name) *>(nullptr)}; }                            \
 Property<Type, name(#Name), ##__VA_ARGS__> Name
 
 /// Theses flags describe various capabilites of a property.
@@ -129,11 +137,87 @@ private:
     ValueType m_value;
 };
 
-/// This class provides the introspection information for this `Object`.
+
+namespace detail {
+
+/// Introspection information about class members.
 ///
-template <class Object>
+struct MemberInfo
+{
+    enum class Type {
+        Invalid,
+        Property,
+        Setter,
+        Method,
+        Signal,
+        Slot,
+        Constructor,
+    };
+
+    constexpr MemberInfo() noexcept = default;
+
+    template <class Object, typename Value, auto Name, FeatureSet Features>
+    constexpr MemberInfo(const Property<Object, Value, Name, Features> *) noexcept
+        : type{Type::Property}
+        , index{Name.index}
+        , name{Name.value}
+        , valueType{qMetaTypeId<Value>()}
+        , features{Features}
+    {}
+
+    constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
+
+    Type        type        = Type::Invalid;
+    quintptr    index       = 0;
+    const char *name        = nullptr;
+
+    int         valueType   = QMetaType::UnknownType;
+    FeatureSet  features;
+};
+
+} // namespace detail
+
+/// This class provides the introspection information for this `ObjectType`.
+///
+/// Template arguments:
+/// * `ObjectType` - the type of the object to describe
+/// * `SuperType` - the super class of `ObjectType`
+/// * `MaximumLineCount` - the maximum number of lines in the class definition,
+///                        simply sizeof(ObjectType) if zero gets passed
+///
+template<class ObjectType, class SuperType, std::size_t MaximumLineCount = 0>
 class MetaObject : public QMetaObject
 {
+public:
+    MetaObject() : QMetaObject{build()} {}
+
+private:
+    QMetaObject build()
+    {
+        constexpr auto lineCount = std::max(sizeof(ObjectType), MaximumLineCount);
+        constexpr auto lines = std::make_integer_sequence<quintptr, lineCount>();
+        registerMembers<ObjectType::lineOffset()>(lines);
+
+        auto builder = detail::MetaObjectBuilder{};
+        return builder.makeMetaObject(QMetaType::fromType<ObjectType>(),
+                                      &SuperType::staticMetaObject,
+                                      m_members);
+    }
+
+    template<quintptr Offset, quintptr... Indices>
+    Q_ALWAYS_INLINE void registerMembers(const std::integer_sequence<quintptr, Indices...> &)
+    {
+        (registerMember<Offset + Indices>(), ...);
+    }
+
+    template<quintptr Index>
+    Q_ALWAYS_INLINE void registerMember()
+    {
+        if (constexpr auto member = ObjectType::template member(detail::Tag<Index>{}))
+            m_members.emplace_back(std::move(member));
+    }
+
+    std::vector<detail::MemberInfo> m_members;
 };
 
 /// This mixin provides convenience methods for classes implementing
@@ -146,8 +230,10 @@ class MetaObject : public QMetaObject
 template <class ObjectType, class SuperType = QObject>
 class Object : public SuperType
 {
+    friend nproperty::MetaObject<ObjectType, SuperType>;
+
 public:
-    using MetaObject = nproperty::MetaObject<Object>;
+    using MetaObject = nproperty::MetaObject<ObjectType, SuperType>;
 
     using SuperType::SuperType;
 

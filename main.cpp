@@ -61,11 +61,8 @@ template<> constexpr auto implementedFeatures<sproperty::SObject>
 
 template<> constexpr uint skippedFeatures<nproperty::NObjectMacro>
     = skippedFeatures<>
-      | MetaObject
-      | PropertyDefinitions
       | UniquePropertyIds
       | PropertyAddresses
-      | MethodDefinitions
       | SignalAddresses
       | PropertyChanges
       | PropertyNotifications

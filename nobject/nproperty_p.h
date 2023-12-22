@@ -4,8 +4,14 @@
 #include <QtGlobal>
 
 #include <algorithm>
+#include <vector>
+
+class QMetaObject;
+class QMetaObjectBuilder;
 
 namespace nproperty::detail {
+
+struct MemberInfo;
 
 /// A tagging type that's use to generate individual functions for various
 /// class members. Usually the current line number is used as argument.
@@ -64,6 +70,20 @@ struct Flags
     { return (*this & flag) == flag; }
 
     ValueType value;
+};
+
+/// Builds a QMetaObject from our static introspection information.
+///
+class MetaObjectBuilder
+{
+public:
+    QMetaObject makeMetaObject(const QMetaType &metaType,
+                               const QMetaObject *superClass,
+                               const std::vector<MemberInfo> &members);
+
+private:
+    void makeProperty(QMetaObjectBuilder &metaObject,
+                      const MemberInfo   &property);
 };
 
 } // namespace nproperty::detail
