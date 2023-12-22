@@ -95,6 +95,14 @@ private:
         static_assert(std::is_convertible_v<decltype(metaObject), QMetaObject>);
 
         SHOW(sizeof(object));
+        SHOW(sizeof(QString));
+
+        if constexpr (isDataMember<&T::constant>)
+            QCOMPARE(sizeof(T::constant), sizeof(QString));
+        if constexpr (isDataMember<&T::notifying>)
+            SHOW(sizeof(T::notifying));
+        if constexpr (isDataMember<&T::writable>)
+            SHOW(sizeof(T::writable));
 
         const QFETCH(QByteArray, expectedClassName);
         const QFETCH(QByteArray, expectedSuperClassName);
@@ -117,15 +125,6 @@ private:
         const auto constant   = metaObject.property(1);
         const auto notifying  = metaObject.property(2);
         const auto writable   = metaObject.property(3);
-
-        if constexpr (isDataMember<&T::constant>)
-            QCOMPARE(sizeof(T::constant), sizeof(QString));
-        if constexpr (isDataMember<&T::notifying>)
-            SHOW(sizeof(T::notifying));
-        if constexpr (isDataMember<&T::writable>)
-            SHOW(sizeof(T::writable));
-
-        SHOW(sizeof(QString));
 
         QVERIFY (constant.isValid());
         QCOMPARE(constant.name(),          "constant");
