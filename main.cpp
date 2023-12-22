@@ -7,6 +7,51 @@
 
 namespace {
 
+/// The following is a system of concepts, constants and flags that
+/// allow to disable test features which cannot get compiled, or simply
+/// are not implemented yet for some object type.
+///
+enum Feature
+{
+    MetaObject          = (1 << 0),
+    PropertyDefinitions = (1 << 1),
+    UniquePropertyIds   = (1 << 2),
+    PropertyAddresses   = (1 << 3),
+    MethodDefinitions   = (1 << 4),
+    SignalAddresses     = (1 << 5),
+    PropertyChanges     = (1 << 6),
+};
+
+/// By default all features are considered enabled, and no features are skipped.
+///
+template<class T = void> constexpr uint implementedFeatures = ~0;
+template<class T = void> constexpr uint skippedFeatures = 0;
+
+/// Now the constants and concepts to disable features.
+///
+template<Feature feature, class T>
+constexpr bool isImplementedFeature = (implementedFeatures<T> & feature) == feature;
+
+template<Feature feature, class T>
+constexpr bool isSkippedFeature = (skippedFeatures<T> & feature) == feature;
+
+template<class T, Feature feature>
+concept HasFeature = (isImplementedFeature<feature, T>
+                      && !isSkippedFeature<feature, T>);
+
+/// Finally the type specific feature configurations.
+///
+template<> constexpr uint implementedFeatures<aproperty::AObject>
+    = implementedFeatures<>
+      & ~UniquePropertyIds      // properties do not have their own objects with moc
+      & ~PropertyAddresses;     // properties do not have their own objects with moc
+
+template<> constexpr uint implementedFeatures<sproperty::SObject>
+    = implementedFeatures<>
+      & ~UniquePropertyIds      // properties do not have their own objects with moc
+      & ~PropertyAddresses;     // properties do not have their own objects with moc
+
+
 /// Just a tiny wrapper with simple name for the pretty verbose
 /// `!std::is_member_function_pointer_v<decltype(&T::member)>`.
 ///
@@ -43,7 +88,7 @@ const auto writableSpy2  = QList<QVariantList>{{writable2}};
 const auto writableSpy3  = QList<QVariantList>{{writable2}, {metacall1}};
 const auto writableSpy4  = QList<QVariantList>{{writable2}, {metacall1}, {writable3}};
 
-/// The experiment is implemented as Qt Test suite.
+/// The property experiment is implemented as Qt Test suite.
 ///
 class PropertyExperiment: public QObject
 {
@@ -88,7 +133,7 @@ private:
     /// An initial test for the most basic properties of the generated QMetaObjects
     /// --------------------------------------------------------------------------------------------
 
-    template <class T>
+    template <HasFeature<MetaObject> T>
     static void testMetaObject(T &object)
     {
         const auto metaType = QMetaType::fromType<T>();
@@ -121,11 +166,18 @@ private:
         QCOMPARE(metaObject.methodCount(), 7);
     }
 
+    template <class T>
+    static void testMetaObject(T &)
+    {
+        if (isSkippedFeature<MetaObject, T>)
+            QSKIP("Not implemented yet");
+    }
+
     /// --------------------------------------------------------------------------------------------
     /// Verify that the generated properties look like expected.
     /// --------------------------------------------------------------------------------------------
 
-    template <class T>
+    template <HasFeature<PropertyDefinitions> T>
     static void testPropertyDefinitions(T &object)
     {
         const auto metaObject = T::staticMetaObject;
@@ -177,15 +229,19 @@ private:
         QCOMPARE(writable.hasNotifySignal(),     true);
     }
 
+    template <class T>
+    static void testPropertyDefinitions(T &)
+    {
+        if (isSkippedFeature<PropertyDefinitions, T>)
+            QSKIP("Not implemented yet");
+    }
+
     /// --------------------------------------------------------------------------------------------
     /// Verify that properties have unique ids if the type system needs this.
     /// --------------------------------------------------------------------------------------------
 
-    template <class T>
-    static void testUniquePropertyIds(T &)
-    {}
-
-    static void testUniquePropertyIds(mproperty::MObject &object)
+    template <HasFeature<UniquePropertyIds> T>
+    static void testUniquePropertyIds(T &object)
     {
         const auto uniqueIds = QSet{object. constant.index(),
                                     object.notifying.index(),
@@ -204,19 +260,21 @@ private:
                                           object. writable.address()};
 
         QCOMPARE(uniqueAddresses.size(), 3);
+    }
 
-        testUniquePropertyIds<mproperty::MObject>(object);
+    template <class T>
+    static void testUniquePropertyIds(T &)
+    {
+        if (isSkippedFeature<UniquePropertyIds, T>)
+            QSKIP("Not implemented yet");
     }
 
     /// --------------------------------------------------------------------------------------------
     /// Verify that properties have reasonable addresses they can use their signals.
     /// --------------------------------------------------------------------------------------------
 
-    template <class T>
-    static void testPropertyAddresses(T &)
-    {}
-
-    static void testPropertyAddresses(mproperty::MObject &object)
+    template <HasFeature<PropertyAddresses> T>
+    static void testPropertyAddresses(T &object)
     {
         const auto objectAddress = reinterpret_cast<qintptr>(&object);
 
@@ -227,15 +285,20 @@ private:
         QCOMPARE(object. constant.object(), &object);
         QCOMPARE(object.notifying.object(), &object);
         QCOMPARE(object. writable.object(), &object);
+    }
 
-        testPropertyAddresses<mproperty::MObject>(object);
+    template <class T>
+    static void testPropertyAddresses(T &)
+    {
+        if (isSkippedFeature<PropertyAddresses, T>)
+            QSKIP("Not implemented yet");
     }
 
     /// --------------------------------------------------------------------------------------------
     /// Verify that the generated methods look like expected.
     /// --------------------------------------------------------------------------------------------
 
-    template <class T>
+    template <HasFeature<MethodDefinitions> T>
     static void testMethodDefinitions(T &object)
     {
         const auto metaObject = T::staticMetaObject;
@@ -275,11 +338,18 @@ private:
         QCOMPARE(writableChanged.parameterNames().at(0),              "writable");
     }
 
+    template <class T>
+    static void testMethodDefinitions(T &)
+    {
+        if (isSkippedFeature<MethodDefinitions, T>)
+            QSKIP("Not implemented yet");
+    }
+
     /// --------------------------------------------------------------------------------------------
     /// Verify that signals have reasonable addresses for QObject::connect().
     /// --------------------------------------------------------------------------------------------
 
-    template <class T>
+    template <HasFeature<SignalAddresses> T>
     static void testSignalAddresses(T &)
     {
         QVERIFY(&T::notifyingChanged != &T::writableChanged);
@@ -293,17 +363,31 @@ private:
         testSignalAddresses<mproperty::MObject>(object);
     }
 
+    template <class T>
+    static void testSignalAddresses(T &)
+    {
+        if (isSkippedFeature<SignalAddresses, T>)
+            QSKIP("Not implemented yet");
+    }
+
     /// --------------------------------------------------------------------------------------------
     /// Verify that properties can be changed, and emit the expected signals.
     /// --------------------------------------------------------------------------------------------
 
-    template <class T>
+    template <HasFeature<PropertyChanges> T>
     static void testPropertyChanges(T &object)
     {
         auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
         auto writableSpy  = QSignalSpy{&object, &T::writableChanged};
 
         testPropertyChanges(object, notifyingSpy, writableSpy);
+    }
+
+    template <class T>
+    static void testPropertyChanges(T &)
+    {
+        if (isSkippedFeature<PropertyChanges, T>)
+            QSKIP("Not implemented yet");
     }
 
     template <class T>
