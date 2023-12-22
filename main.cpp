@@ -122,9 +122,13 @@ private:
     static void testPropertyDefinitions(T &object)
     {
         const auto metaObject = T::staticMetaObject;
-        const auto constant   = metaObject.property(1);
-        const auto notifying  = metaObject.property(2);
-        const auto writable   = metaObject.property(3);
+        const auto offset     = T::staticMetaObject.propertyOffset();
+
+        QCOMPARE(offset, QObject::staticMetaObject.propertyCount());
+
+        const auto constant   = metaObject.property(offset + 0);
+        const auto notifying  = metaObject.property(offset + 1);
+        const auto writable   = metaObject.property(offset + 2);
 
         QVERIFY (constant.isValid());
         QCOMPARE(constant.name(),          "constant");
