@@ -5,6 +5,8 @@
 
 #include <QMetaObject>
 
+#include <source_location>
+
 namespace nproperty {
 
 /// This macro is needed for each NObject to make it known to Qt's metatype system.
@@ -48,8 +50,7 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 /// ```
 ///
 #define N_PROPERTY(Type, Name, ...) \
-static consteval const char *name(::nproperty::detail::Tag<__LINE__>) { return #Name; } \
-Property<Type, ::nproperty::detail::name(#Name), ##__VA_ARGS__> Name
+Property<Type, name(#Name), ##__VA_ARGS__> Name
 
 /// Theses flags describe various capabilites of a property.
 ///
@@ -153,6 +154,20 @@ public:
 protected:
     template <typename Value, auto Name, FeatureSet Features = Feature::Read>
     using Property = nproperty::Property<ObjectType, Value, Name, Features>;
+
+    template <std::size_t N>
+    static consteval detail::Name<N> name(const char (&name)[N],
+                                          std::source_location source =
+                                          std::source_location::current())
+    {
+        return detail::Name{name, std::move(source).line()};
+    }
+
+    template <std::size_t N>
+    static consteval detail::Name<N> name(quintptr index, const char (&name)[N])
+    {
+        return detail::Name{name, index};
+    }
 
     template <quintptr N>
     static consteval const char *name(detail::Tag<N>) { return nullptr; }

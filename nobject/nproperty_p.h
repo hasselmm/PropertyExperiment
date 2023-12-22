@@ -4,7 +4,6 @@
 #include <QtGlobal>
 
 #include <algorithm>
-#include <source_location>
 
 namespace nproperty::detail {
 
@@ -28,13 +27,6 @@ struct Name {
     quintptr index;
     char     value[N];
 };
-
-template <std::size_t N>
-consteval Name<N> name(const char (&name)[N],
-                       std::source_location source = std::source_location::current())
-{
-    return Name<N>{name, source.line()};
-}
 
 /// QFlags<T> clone that can be used as template argument:
 /// In difference to QFlags<T> this type is structural.

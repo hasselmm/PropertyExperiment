@@ -8,6 +8,8 @@
 
 namespace nproperty {
 
+/// A very basic example demonstrating the concept of NObject
+///
 class HelloWorld : public Object<HelloWorld>
 {
     N_OBJECT
@@ -18,6 +20,9 @@ public:
 };
 
 
+/// This class simply helps testing if the generated meta object
+/// provides proper information about the class hierarchy.
+///
 class NObjectBase : public QObject // for testing base type mechanism
 {
     Q_OBJECT
@@ -27,7 +32,9 @@ public:
 };
 
 
-class NObject : public Object<NObject, NObjectBase>
+/// This class implements an NObject based QObject using macros.
+///
+class NObjectMacro : public Object<NObjectMacro, NObjectBase>
 {
     N_OBJECT
 
@@ -47,6 +54,44 @@ public:
 
     // static constexpr Signal<&MObject::notifying> notifyingChanged = {};
     // static constexpr Signal<&MObject::writable> writableChanged = {};
+};
+
+/// This class implements an NObject based QObject using C++ 20.
+///
+class NObjectModern : public Object<NObjectModern, NObjectBase>
+{
+    N_OBJECT
+
+public:
+    using Object::Object;
+
+    void modifyNotifying()
+    {
+        notifying = u"I have been changed per method"_qs;
+    }
+
+    Property<QString, name("constant")>          constant  = u"I am constant"_qs;
+    Property<QString, name("notifying"), Notify> notifying = u"I am observing"_qs;
+    Property<QString, name("writable"),  Write>  writable  = u"I am modifiable"_qs;
+};
+
+/// This class implements an NObject based QObject using C++ 20.
+//
+class NObjectLegacy : public Object<NObjectLegacy, NObjectBase>
+{
+    N_OBJECT
+
+public:
+    using Object::Object;
+
+    void modifyNotifying()
+    {
+        notifying = u"I have been changed per method"_qs;
+    }
+
+    Property<QString, name(__LINE__, "constant")>          constant  = u"I am constant"_qs;
+    Property<QString, name(__LINE__, "notifying"), Notify> notifying = u"I am observing"_qs;
+    Property<QString, name(__LINE__, "writable"),  Write>  writable  = u"I am modifiable"_qs;
 };
 
 } // namespace nproperty

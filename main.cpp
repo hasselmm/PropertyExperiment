@@ -59,7 +59,33 @@ template<> constexpr auto implementedFeatures<sproperty::SObject>
       & ~NotifyPointers         // properties do not have their own objects with moc
     ;
 
-template<> constexpr uint skippedFeatures<nproperty::NObject>
+template<> constexpr uint skippedFeatures<nproperty::NObjectMacro>
+    = skippedFeatures<>
+      | MetaObject
+      | PropertyDefinitions
+      | UniquePropertyIds
+      | PropertyAddresses
+      | MethodDefinitions
+      | SignalAddresses
+      | PropertyChanges
+      | PropertyNotifications
+      | NotifyPointers
+    ;
+
+template<> constexpr uint skippedFeatures<nproperty::NObjectModern>
+    = skippedFeatures<>
+      | MetaObject
+      | PropertyDefinitions
+      | UniquePropertyIds
+      | PropertyAddresses
+      | MethodDefinitions
+      | SignalAddresses
+      | PropertyChanges
+      | PropertyNotifications
+      | NotifyPointers
+    ;
+
+template<> constexpr uint skippedFeatures<nproperty::NObjectLegacy>
     = skippedFeatures<>
       | MetaObject
       | PropertyDefinitions
@@ -676,16 +702,22 @@ private:
         QTest::addColumn<QByteArray>         ("expectedClassName");
         QTest::addColumn<QByteArray>         ("expectedSuperClassName");
 
-        makeTestRow<Delegate, aproperty::AObject>("aproperty",
-                                                  "aproperty::AObject");
-        makeTestRow<Delegate, mproperty::MObject>("mproperty",
-                                                  "mproperty::MObject",
-                                                  "mproperty::MObjectBase");
-        makeTestRow<Delegate, nproperty::NObject>("nproperty",
-                                                  "nproperty::NObject",
-                                                  "nproperty::NObjectBase");
-        makeTestRow<Delegate, sproperty::SObject>("sproperty",
-                                                  "sproperty::SObject");
+        makeTestRow<Delegate, aproperty::AObject>      ("aproperty",
+                                                        "aproperty::AObject");
+        makeTestRow<Delegate, mproperty::MObject>      ("mproperty",
+                                                        "mproperty::MObject",
+                                                        "mproperty::MObjectBase");
+        makeTestRow<Delegate, nproperty::NObjectMacro> ("nproperty:macro",
+                                                        "nproperty::NObjectMacro",
+                                                        "nproperty::NObjectBase");
+        makeTestRow<Delegate, nproperty::NObjectModern>("nproperty:modern",
+                                                        "nproperty::NObjectModern",
+                                                        "nproperty::NObjectBase");
+        makeTestRow<Delegate, nproperty::NObjectLegacy>("nproperty:legacy",
+                                                        "nproperty::NObjectLegacy",
+                                                        "nproperty::NObjectBase");
+        makeTestRow<Delegate, sproperty::SObject>      ("sproperty",
+                                                        "sproperty::SObject");
     }
 
     template<typename Delegate, class T>
