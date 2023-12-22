@@ -51,7 +51,7 @@ public:
     static constexpr bool isWritable()   noexcept { return (F & Feature::Write); }
 
     // FIXME: public?
-    static constexpr qintptr uniqueId() noexcept { return I; }
+    static constexpr qintptr index() noexcept { return I; }
 
     T get() const noexcept { return m_value; }
     T operator()() const noexcept { return get(); }
@@ -100,7 +100,7 @@ public: // FIXME: maybe mark these accessors protected or private
     qintptr offset() const noexcept
     {
         for (const auto &p: ObjectType::MetaObject::properties())
-            if (p.uniqueId() == uniqueId())
+            if (p.index() == index())
                 return p.offset();
 
         return 0u;
@@ -109,7 +109,7 @@ public: // FIXME: maybe mark these accessors protected or private
     ObjectType *object() const noexcept
     {
         for (const auto &p: ObjectType::MetaObject::properties()) {
-            if (p.uniqueId() == uniqueId())
+            if (p.index() == index())
                 return reinterpret_cast<ObjectType *>(address() - p.offset());
         }
 
@@ -132,11 +132,11 @@ private:
 struct MetaMethod
 {
     constexpr MetaMethod() noexcept = default;
-    constexpr MetaMethod(const void *pointer, qintptr uniqueId) noexcept
-        : pointer{pointer}, uniqueId{uniqueId} {}
+    constexpr MetaMethod(const void *pointer, qintptr index) noexcept
+        : pointer{pointer}, index{index} {}
 
     const void *pointer;
-    qintptr     uniqueId;
+    qintptr     index;
 };
 
 template<class ObjectType>
@@ -159,7 +159,7 @@ public:
         , m_write{makeWriteFunction(p)}
         , m_notify{makeNotifyPointer(p)}
         , m_offset{MetaObject::offsetOf(p)}
-        , m_uniqueId{p->uniqueId()}
+        , m_index{p->index()}
         , m_features{F}
     {}
 
@@ -167,7 +167,7 @@ public:
     auto type()          const noexcept { return m_type; }
     auto notifyPointer() const noexcept { return m_notify; }
     auto offset()        const noexcept { return m_offset; }
-    auto uniqueId()      const noexcept { return m_uniqueId; }
+    auto index()         const noexcept { return m_index; }
 
     bool isReadable()    const noexcept { return (m_features & Feature::Read) || isNotifyable(); } // FIXME
     bool isNotifyable()  const noexcept { return (m_features & Feature::Notify) || isWritable(); } // FIXME
@@ -227,7 +227,7 @@ private:
     WriteFunction    m_write;
     const void      *m_notify;
     qintptr          m_offset;
-    qintptr          m_uniqueId;
+    qintptr          m_index;
     Features         m_features;
 };
 
@@ -340,7 +340,7 @@ public:
 
         for (const MetaProperty &p: properties()) {
             if (const auto notify = p.notifyPointer())
-                methods.emplace_back(notify, p.uniqueId());
+                methods.emplace_back(notify, p.index());
         }
 
         return methods;
@@ -456,7 +456,7 @@ public:
     {
         // FIXME: maybe create hash
         for (auto i = 0U; i < MetaObject::methods().size(); ++i) {
-            if (MetaObject::methods().at(i).uniqueId == I) {
+            if (MetaObject::methods().at(i).index == I) {
                 void *args[] = {
                     nullptr,
                     const_cast<void*>(reinterpret_cast<const void*>(std::addressof(value)))

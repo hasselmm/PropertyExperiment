@@ -187,9 +187,9 @@ private:
 
     static void testUniquePropertyIds(mproperty::MObject &object)
     {
-        const auto uniqueIds = QSet{object. constant.uniqueId(),
-                                    object.notifying.uniqueId(),
-                                    object. writable.uniqueId()};
+        const auto uniqueIds = QSet{object. constant.index(),
+                                    object.notifying.index(),
+                                    object. writable.index()};
 
         QCOMPARE(uniqueIds.size(), 3);
 
