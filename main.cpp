@@ -14,10 +14,6 @@ template<auto pointer>
 constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
                               && !std::is_member_function_pointer_v<decltype(pointer)>;
 
-/// Simply show an expression and its value.
-///
-#define SHOW(What) qInfo() << #What " =>" << (What)
-
 /// Allow to run templated test function for different types
 ///
 #define MAKE_TESTDATA(TestFunction) \
@@ -25,6 +21,30 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
         TestFunction(object); \
     })>()
 
+/// Simply show an expression and its value.
+///
+#define SHOW(What) qInfo() << #What " =>" << (What)
+
+/// Some constants for testPropertyChanges()
+///
+const auto  constant1 = u"I am constant"_qs;
+const auto notifying1 = u"I am observing"_qs;
+const auto notifying2 = u"I have been changed per method"_qs;
+const auto  writable1 = u"I am modifiable"_qs;
+const auto  writable2 = u"I have been changed per setter"_qs;
+const auto  writable3 = u"I have been changed by assignment"_qs;
+const auto  metacall1 = u"I have been changed per metacall"_qs;
+
+const auto notifyingSpy1 = QList<QVariantList>{};
+const auto notifyingSpy2 = QList<QVariantList>{{notifying2}};
+
+const auto writableSpy1  = QList<QVariantList>{};
+const auto writableSpy2  = QList<QVariantList>{{writable2}};
+const auto writableSpy3  = QList<QVariantList>{{writable2}, {metacall1}};
+const auto writableSpy4  = QList<QVariantList>{{writable2}, {metacall1}, {writable3}};
+
+/// The experiment is implemented as Qt Test suite.
+///
 class PropertyExperiment: public QObject
 {
     Q_OBJECT
@@ -227,20 +247,14 @@ private:
         auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
         auto writableSpy  = QSignalSpy{&object, &T::writableChanged};
 
-        const auto  constant1 = u"I am constant"_qs;
-        const auto notifying1 = u"I am observing"_qs;
-        const auto notifying2 = u"I have been changed per method"_qs;
-        const auto  writable1 = u"I am modifiable"_qs;
-        const auto  writable2 = u"I have been changed per setter"_qs;
-        const auto  metacall1 = u"I have been changed per metacall"_qs;
+        testPropertyChanges(object, notifyingSpy, writableSpy);
+    }
 
-        const auto notifyingSpy1 = QList<QVariantList>{};
-        const auto notifyingSpy2 = QList<QVariantList>{{notifying2}};
-
-        const auto writableSpy1  = QList<QVariantList>{};
-        const auto writableSpy2  = QList<QVariantList>{{writable2}};
-        const auto writableSpy3  = QList<QVariantList>{{writable2}, {metacall1}};
-
+    template <class T>
+    static void testPropertyChanges(T          &object,
+                                    QSignalSpy &notifyingSpy,
+                                    QSignalSpy &writableSpy)
+    {
         QCOMPARE(object.constant(),             constant1);
         QCOMPARE(object.property("constant"),   constant1);
 
@@ -287,38 +301,34 @@ private:
 
         QCOMPARE(notifyingSpy,                  notifyingSpy2);
         QCOMPARE(writableSpy,                   writableSpy3);
-
-        if constexpr (std::is_same_v<T, mproperty::MObject>) {
-            auto uniqueIds = QSet{object.constant. uniqueId(),
-                                  object.notifying.uniqueId(),
-                                  object.writable. uniqueId()};
-
-            QCOMPARE(uniqueIds.size(), 3);
-
-            QCOMPARE(sizeof(object.constant),           sizeof(QString));
-            QCOMPARE(sizeof(object.notifying),          sizeof(QString));
-            QCOMPARE(sizeof(object.writable),           sizeof(QString));
-            QCOMPARE(sizeof(object.notifyingChanged),      sizeof(char));
-
-            const auto writable3     = u"I have been changed by assignment"_qs;
-            const auto writableSpy3  = QList<QVariantList>{{writable2}, {metacall1}, {writable3}};
-
-            // object.constant = u"error"_s;    // compile error
-            // object.notifying = u"error"_s;   // FIXME: currently would work, but shouldn't
-
-            object.writable = writable3;
-
-            QCOMPARE(object.writable(),             writable3);
-            QCOMPARE(object.property("writable"),   writable3);
-
-            QCOMPARE(writableSpy,                   writableSpy3);
-        }
     }
 
-    static void testPropertyChanges(mproperty::MObject &object)
+    static void testPropertyChanges(mproperty::MObject &object,
+                                    QSignalSpy   &notifyingSpy,
+                                    QSignalSpy    &writableSpy)
     {
-        testPropertyChanges<mproperty::MObject>(object);
-        qInfo("BAR");
+        testPropertyChanges<mproperty::MObject>(object, notifyingSpy, writableSpy);
+
+        auto uniqueIds = QSet{object.constant. uniqueId(),
+                              object.notifying.uniqueId(),
+                              object.writable. uniqueId()};
+
+        QCOMPARE(uniqueIds.size(), 3);
+
+        QCOMPARE(sizeof(object.constant),           sizeof(QString));
+        QCOMPARE(sizeof(object.notifying),          sizeof(QString));
+        QCOMPARE(sizeof(object.writable),           sizeof(QString));
+        QCOMPARE(sizeof(object.notifyingChanged),      sizeof(char));
+
+        // object.constant = u"error"_s;    // compile error
+        // object.notifying = u"error"_s;   // FIXME: currently would work, but shouldn't
+
+        object.writable = writable3;
+
+        QCOMPARE(object.writable(),             writable3);
+        QCOMPARE(object.property("writable"),   writable3);
+
+        QCOMPARE(writableSpy,                   writableSpy4);
     }
 
     /// --------------------------------------------------------------------------------------------
