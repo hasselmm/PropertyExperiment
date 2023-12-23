@@ -185,7 +185,7 @@ private:
     static ReadFunction makeReadFunction(const Property<I, T, F> *prototype)
     {
         static const auto offset = MetaObject::offsetOf(prototype);
-        Q_ASSERT(offset >= 0 && offset < sizeof(ObjectType));
+        Q_ASSERT(static_cast<std::size_t>(offset) < sizeof(ObjectType));
 
         return [](const ObjectType *object, void *value) {
             const auto p = MetaObject::template property<I, T, F>(object, offset);
@@ -198,7 +198,7 @@ private:
     {
         if constexpr (F & Feature::Write) {
             static const auto offset = MetaObject::offsetOf(prototype); // FIXME: this works only once
-            Q_ASSERT(offset >= 0 && offset < sizeof(ObjectType));
+            Q_ASSERT(static_cast<std::size_t>(offset) < sizeof(ObjectType));
 
             return [](ObjectType *object, const void *value) {
                 const auto p = MetaObject::template property<I, T, F>(object, offset);
@@ -297,15 +297,17 @@ public:
         }
 
         objectBuilder.setStaticMetacallFunction([](QObject *object, QMetaObject::Call call,
-                                         int offset, void **args) {
+                                                   int offset, void **args) {
+            const auto index = static_cast<std::size_t>(offset);
+
             if (call == QMetaObject::ReadProperty) {
-                if (offset < properties().size()) {
-                    const auto &p = properties()[offset];
+                if (index < properties().size()) {
+                    const auto &p = properties()[index];
                     p.read(static_cast<const ObjectType *>(object), args[0]);
                 }
             } else if (call == QMetaObject::WriteProperty) {
-                if (offset < properties().size()) {
-                    const auto &p = properties()[offset];
+                if (index < properties().size()) {
+                    const auto &p = properties()[index];
                     p.write(static_cast<ObjectType *>(object), args[0]);
                 }
             } else if (call == QMetaObject::IndexOfMethod) {
@@ -326,7 +328,8 @@ public:
                 }
             } else {
                 qWarning("Unsupported metacall for %s: call=%d, offset=%d, args=%p",
-                         ObjectType::staticMetaObject.className(), call, offset, args);
+                         ObjectType::staticMetaObject.className(), call, offset,
+                         static_cast<const void *>(args));
             }
         });
 
@@ -446,7 +449,7 @@ protected:
 public:
 // FIXME: protected or even private
     template<qintptr I, typename T, Feature F>
-    static MemberFunction<ObjectType, void, T> signalProxy(const Property<I, T, F> *p)
+    static MemberFunction<ObjectType, void, T> signalProxy(const Property<I, T, F> *)
     {
         return &ObjectType::template activateSignal<I, T>;
     }
@@ -462,7 +465,8 @@ public:
                     const_cast<void*>(reinterpret_cast<const void*>(std::addressof(value)))
                 };
 
-                QMetaObject::activate(this, &ObjectType::staticMetaObject, i, args);
+                QMetaObject::activate(this, &ObjectType::staticMetaObject,
+                                      static_cast<int>(i), args);
             }
         }
     }
