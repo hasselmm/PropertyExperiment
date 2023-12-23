@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.14)
 
 project(PropertyExperiment LANGUAGES CXX)
 
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(CodePoetryCompileOptions)
+include(GNUInstallDirs)
+enable_testing()
+
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -11,8 +16,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Test)
 
-include(GNUInstallDirs)
-enable_testing()
+# https://clang.llvm.org/docs/DiagnosticsReference.html
+# https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html
+codepoetry_add_compile_options(
+    -Werror=all
+    -Werror=arith-conversion
+    -Werror=comment
+    -Werror=conversion
+    -Werror=extra
+    -Werror=pedantic
+    -Werror=sign-compare
+    -Werror=sign-conversion
+    -Werror=switch
+    -Werror=unused
+    CLANG GNU
+)
+
+codepoetry_add_compile_options(
+    -Werror=invalid-constexpr
+    CLANG_MINIMUM_VERSION 15
+    GNU_MINIMUM_VERSION 13
+)
+
+# https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options
+codepoetry_add_compile_options(
+    /W4 /permissive- /utf-8
+    MSVC)
 
 add_executable(
     PropertyExperiment
@@ -25,7 +54,11 @@ add_executable(
     sobject/sobject.cpp     sobject/sobject.h
 )
 
-target_link_libraries(PropertyExperiment Qt::CorePrivate Qt::Test)
+target_link_libraries(
+    PropertyExperiment
+    Qt::CorePrivate
+    Qt::Test
+)
 
 add_test(
     NAME PropertyExperiment

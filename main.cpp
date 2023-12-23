@@ -13,19 +13,20 @@ namespace {
 ///
 enum Feature
 {
-    MetaObject          = (1 << 0),
-    PropertyDefinitions = (1 << 1),
-    UniquePropertyIds   = (1 << 2),
-    PropertyAddresses   = (1 << 3),
-    MethodDefinitions   = (1 << 4),
-    SignalAddresses     = (1 << 5),
-    PropertyChanges     = (1 << 6),
+    None                = 0,
+    MetaObject          = 1 << 0,
+    PropertyDefinitions = 1 << 1,
+    UniquePropertyIds   = 1 << 2,
+    PropertyAddresses   = 1 << 3,
+    MethodDefinitions   = 1 << 4,
+    SignalAddresses     = 1 << 5,
+    PropertyChanges     = 1 << 6,
 };
 
 /// By default all features are considered enabled, and no features are skipped.
 ///
-template<class T = void> constexpr uint implementedFeatures = ~0;
-template<class T = void> constexpr uint skippedFeatures = 0;
+template<class T = void> constexpr auto implementedFeatures = ~Feature::None;
+template<class T = void> constexpr auto skippedFeatures = Feature::None;
 
 /// Now the constants and concepts to disable features.
 ///
@@ -41,12 +42,12 @@ concept HasFeature = (isImplementedFeature<feature, T>
 
 /// Finally the type specific feature configurations.
 ///
-template<> constexpr uint implementedFeatures<aproperty::AObject>
+template<> constexpr auto implementedFeatures<aproperty::AObject>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
       & ~PropertyAddresses;     // properties do not have their own objects with moc
 
-template<> constexpr uint implementedFeatures<sproperty::SObject>
+template<> constexpr auto implementedFeatures<sproperty::SObject>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
       & ~PropertyAddresses;     // properties do not have their own objects with moc
@@ -178,7 +179,7 @@ private:
     /// --------------------------------------------------------------------------------------------
 
     template <HasFeature<PropertyDefinitions> T>
-    static void testPropertyDefinitions(T &object)
+    static void testPropertyDefinitions(T &)
     {
         const auto metaObject = T::staticMetaObject;
 
@@ -299,7 +300,7 @@ private:
     /// --------------------------------------------------------------------------------------------
 
     template <HasFeature<MethodDefinitions> T>
-    static void testMethodDefinitions(T &object)
+    static void testMethodDefinitions(T &)
     {
         const auto metaObject = T::staticMetaObject;
 
