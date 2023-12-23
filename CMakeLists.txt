@@ -25,7 +25,11 @@ add_executable(
     sobject/sobject.cpp     sobject/sobject.h
 )
 
-target_link_libraries(PropertyExperiment Qt::CorePrivate Qt::Test)
+target_link_libraries(
+    PropertyExperiment
+    Qt::CorePrivate
+    Qt::Test
+)
 
 add_test(
     NAME PropertyExperiment
