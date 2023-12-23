@@ -283,7 +283,7 @@ public:
             propertyBuilder.setDesignable(true);
             propertyBuilder.setScriptable(true);
             propertyBuilder.setStored(true);
-            propertyBuilder.setStdCppSet(false); // FIXME: why?
+            propertyBuilder.setStdCppSet(p.isWritable()); // QTBUG-120378
             propertyBuilder.setFinal(true);
 
             if (p.notifyPointer()) {

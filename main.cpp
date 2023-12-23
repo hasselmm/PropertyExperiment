@@ -223,7 +223,7 @@ private:
         QCOMPARE(constant.isEnumType(),         false);
         QCOMPARE(constant.hasNotifySignal(),    false);
         QCOMPARE(constant.revision(),               0);
-        QCOMPARE(constant.hasStdCppSet(),       false); // FIXME why is this false for SObject?
+        QCOMPARE(constant.hasStdCppSet(),       false); // QTBUG-120378
         QCOMPARE(constant.isAlias(),            false);
 
         QVERIFY (notifying.isValid());
@@ -233,6 +233,7 @@ private:
         QCOMPARE(notifying.isWritable(),        false);
         QCOMPARE(notifying.isConstant(),        false);
         QCOMPARE(notifying.hasNotifySignal(),    true);
+        QCOMPARE(notifying.hasStdCppSet(),      false); // QTBUG-120378
 
         QVERIFY (writable.isValid());
         QCOMPARE(writable.name(),          "writable");
@@ -241,6 +242,7 @@ private:
         QCOMPARE(writable.isWritable(),          true);
         QCOMPARE(writable.isConstant(),         false);
         QCOMPARE(writable.hasNotifySignal(),     true);
+        QCOMPARE(writable.hasStdCppSet(),        true);
     }
 
     template <class T>
