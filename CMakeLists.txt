@@ -33,6 +33,12 @@ codepoetry_add_compile_options(
 )
 
 codepoetry_add_compile_options(
+    -Werror=infinite-recursion
+    CLANG_MINIMUM_VERSION 15
+    GNU_MINIMUM_VERSION 12
+)
+
+codepoetry_add_compile_options(
     -Werror=invalid-constexpr
     CLANG_MINIMUM_VERSION 15
     GNU_MINIMUM_VERSION 13
