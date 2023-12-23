@@ -23,14 +23,14 @@ function(codepoetry_add_compile_options)
     if (minimum_version)
         if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL minimum_version)
             message(
-                STATUS "Enabling compiler options for ${CMAKE_CXX_COMPILER_ID} "
+                VERBOSE "Enabling compiler options for ${CMAKE_CXX_COMPILER_ID} "
                 "${CMAKE_CXX_COMPILER_VERSION}: ${OPTIONS_UNPARSED_ARGUMENTS}")
 
             add_compile_options(${OPTIONS_UNPARSED_ARGUMENTS})
         endif()
     elseif(${OPTIONS_${uppercase_compiler_id}})
         message(
-            STATUS "Enabling compiler options for ${CMAKE_CXX_COMPILER_ID}: "
+            VERBOSE "Enabling compiler options for ${CMAKE_CXX_COMPILER_ID}: "
             "${OPTIONS_UNPARSED_ARGUMENTS}")
 
         add_compile_options(${OPTIONS_UNPARSED_ARGUMENTS})

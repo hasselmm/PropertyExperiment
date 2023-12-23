@@ -16,8 +16,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Test)
 
-# https://clang.llvm.org/docs/DiagnosticsReference.html
-# https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html
+# https://releases.llvm.org/17.0.1/tools/clang/docs/DiagnosticsReference.html
+# https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Warning-Options.html
 codepoetry_add_compile_options(
     -Werror=all
     -Werror=arith-conversion
@@ -30,6 +30,12 @@ codepoetry_add_compile_options(
     -Werror=switch
     -Werror=unused
     CLANG GNU
+)
+
+codepoetry_add_compile_options(
+    -Werror=infinite-recursion
+    CLANG_MINIMUM_VERSION 15
+    GNU_MINIMUM_VERSION 12
 )
 
 codepoetry_add_compile_options(
@@ -47,11 +53,16 @@ add_executable(
     PropertyExperiment
     main.cpp
 
-    aobject/aobject.cpp     aobject/aobject.h
-    aobject/aproperty.cpp   aobject/aproperty.h
-    mobject/mobject.cpp     mobject/mobject.h
-    mobject/mproperty.cpp   mobject/mproperty.h
-    sobject/sobject.cpp     sobject/sobject.h
+    aobject/aobject.cpp
+    aobject/aobject.h
+    aobject/aproperty.cpp
+    aobject/aproperty.h
+    mobject/mobject.cpp
+    mobject/mobject.h
+    mobject/mproperty.cpp
+    mobject/mproperty.h
+    sobject/sobject.cpp
+    sobject/sobject.h
 )
 
 target_link_libraries(
