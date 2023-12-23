@@ -53,11 +53,16 @@ add_executable(
     PropertyExperiment
     main.cpp
 
-    aobject/aobject.cpp     aobject/aobject.h
-    aobject/aproperty.cpp   aobject/aproperty.h
-    mobject/mobject.cpp     mobject/mobject.h
-    mobject/mproperty.cpp   mobject/mproperty.h
-    sobject/sobject.cpp     sobject/sobject.h
+    aobject/aobject.cpp
+    aobject/aobject.h
+    aobject/aproperty.cpp
+    aobject/aproperty.h
+    mobject/mobject.cpp
+    mobject/mobject.h
+    mobject/mproperty.cpp
+    mobject/mproperty.h
+    sobject/sobject.cpp
+    sobject/sobject.h
 )
 
 target_link_libraries(
