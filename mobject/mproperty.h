@@ -35,7 +35,7 @@ using enum Feature;
 template<class Obj, typename Ret, typename... Args>
 using MemberFunction = Ret (Obj::*)(Args...);
 
-template<class ObjectType, qintptr I, typename T, Feature F>
+template<class ObjectType, quintptr I, typename T, Feature F>
 class Property
 {
     friend ObjectType;
@@ -51,7 +51,7 @@ public:
     static constexpr bool isWritable()   noexcept { return (F & Feature::Write); }
 
     // FIXME: public?
-    static constexpr qintptr index() noexcept { return I; }
+    static constexpr quintptr index() noexcept { return I; }
 
     T get() const noexcept { return m_value; }
     T operator()() const noexcept { return get(); }
@@ -92,12 +92,12 @@ public:
     }
 
 public: // FIXME: maybe mark these accessors protected or private
-    qintptr address() const noexcept
+    quintptr address() const noexcept
     {
-        return reinterpret_cast<qintptr>(this);
+        return reinterpret_cast<quintptr>(this);
     }
 
-    qintptr offset() const noexcept
+    quintptr offset() const noexcept
     {
         for (const auto &p: ObjectType::MetaObject::properties())
             if (p.index() == index())
@@ -132,11 +132,11 @@ private:
 struct MetaMethod
 {
     constexpr MetaMethod() noexcept = default;
-    constexpr MetaMethod(const void *pointer, qintptr index) noexcept
+    constexpr MetaMethod(const void *pointer, quintptr index) noexcept
         : pointer{pointer}, index{index} {}
 
     const void *pointer;
-    qintptr     index;
+    quintptr    index;
 };
 
 template<class ObjectType>
@@ -147,11 +147,11 @@ template<class ObjectType>
 class MetaProperty
 {
 public:
-    template<qintptr I, typename T, Feature F>
+    template<quintptr I, typename T, Feature F>
     using Property = mproperty::Property<ObjectType, I, T, F>;
     using MetaObject = mproperty::MetaObject<ObjectType>;
 
-    template<qintptr I, typename T, Feature F>
+    template<quintptr I, typename T, Feature F>
     MetaProperty(const char *name, const Property<I, T, F> *p)
         : m_name{name}
         , m_type{QMetaType::fromType<T>()}
@@ -181,7 +181,7 @@ private:
     using ReadFunction = void (*)(const ObjectType *, void *);
     using WriteFunction = void (*)(ObjectType *, const void *);
 
-    template<qintptr I, typename T, Feature F>
+    template<quintptr I, typename T, Feature F>
     static ReadFunction makeReadFunction(const Property<I, T, F> *prototype)
     {
         static const auto offset = MetaObject::offsetOf(prototype);
@@ -193,7 +193,7 @@ private:
         };
     }
 
-    template<qintptr I, typename T, Feature F>
+    template<quintptr I, typename T, Feature F>
     static WriteFunction makeWriteFunction(const Property<I, T, F> *prototype)
     {
         if constexpr (F & Feature::Write) {
@@ -209,7 +209,7 @@ private:
         }
     }
 
-    template<qintptr I, typename T, Feature F>
+    template<quintptr I, typename T, Feature F>
     static const void *makeNotifyPointer(const Property<I, T, F> *prototype)
     {
         union {
@@ -226,8 +226,8 @@ private:
     ReadFunction     m_read;
     WriteFunction    m_write;
     const void      *m_notify;
-    qintptr          m_offset;
-    qintptr          m_index;
+    quintptr         m_offset;
+    quintptr         m_index;
     Features         m_features;
 };
 
@@ -236,7 +236,7 @@ template<class ObjectType>
 class MetaObject : public QMetaObject
 {
 public:
-    template<qintptr I, typename T, Feature F>
+    template<quintptr I, typename T, Feature F>
     using Property = mproperty::Property<ObjectType, I, T, F>;
     using MetaProperty = mproperty::MetaProperty<ObjectType>;
     using QMetaObject::property;
@@ -245,22 +245,22 @@ public:
 
     static constexpr auto null() noexcept { return static_cast<const ObjectType *>(nullptr); }
 
-    template<qintptr I, typename T, Feature F>
-    static qintptr offsetOf(const Property<I, T, F> *prototype)
+    template<quintptr I, typename T, Feature F>
+    static quintptr offsetOf(const Property<I, T, F> *prototype)
     {
-        return reinterpret_cast<const char *>(prototype)
-               - reinterpret_cast<const char *>(null());
+        return reinterpret_cast<quintptr>(prototype)
+               - reinterpret_cast<quintptr>(null());
     }
 
-    template<qintptr I, typename T, Feature F>
-    static const Property<I, T, F> *property(const ObjectType *object, qintptr offset)
+    template<quintptr I, typename T, Feature F>
+    static const Property<I, T, F> *property(const ObjectType *object, quintptr offset)
     {
         const auto address = reinterpret_cast<const char *>(object) + offset;
         return reinterpret_cast<const Property<I, T, F> *>(address);
     }
 
-    template<qintptr I, typename T, Feature F>
-    static Property<I, T, F> *property(ObjectType *object, qintptr offset)
+    template<quintptr I, typename T, Feature F>
+    static Property<I, T, F> *property(ObjectType *object, quintptr offset)
     {
         const auto address = reinterpret_cast<char *>(object) + offset;
         return reinterpret_cast<Property<I, T, F> *>(address);
@@ -367,7 +367,7 @@ template<class ObjectType, typename T>
 class Setter
 {
 public:
-    template<qintptr I, Feature F>
+    template<quintptr I, Feature F>
     Setter(Property<ObjectType, I, T, F> *property)
         : m_setter{makeFunction(property)}
     {}
@@ -380,7 +380,7 @@ public:
 private:
     using SetterFunction = std::function<void (T)>;
 
-    template<qintptr I, Feature F>
+    template<quintptr I, Feature F>
     static SetterFunction makeFunction(Property<ObjectType, I, T, F> *property)
     {
         return [property](T &&newValue) {
@@ -392,7 +392,7 @@ private:
 };
 
 // FIXME: move, make constexpr
-template<class ObjectType, qintptr I, typename T, Feature F>
+template<class ObjectType, quintptr I, typename T, Feature F>
 static auto notifyMethod(Property<ObjectType, I, T, F> (ObjectType::*property))
 {
     return (ObjectType::MetaObject::null()->*property).notifyPointer();
@@ -423,7 +423,7 @@ public:
     const QMetaObject *metaObject() const override { return &ObjectType::staticMetaObject; } // FIXME
 
 protected:
-    template<qintptr I, typename T, Feature F = Feature::Read>
+    template<quintptr I, typename T, Feature F = Feature::Read>
     using Property = mproperty::Property<ObjectType, I, T, F>;
 
     template<typename T>
@@ -431,14 +431,14 @@ protected:
 
 #if defined(Q_CC_CLANG) && Q_CC_CLANG < 1600
 
-    static constexpr qintptr n(qintptr l = __builtin_LINE()) noexcept
+    static constexpr quintptr n(quintptr l = __builtin_LINE()) noexcept
     {
         return l;
     }
 
 #else // defined(Q_CC_CLANG) && Q_CC_CLANG < 1600
 
-    static constexpr qintptr n(const std::source_location &location =
+    static constexpr quintptr n(const std::source_location &location =
                                std::source_location::current()) noexcept
     {
         return location.line();
@@ -448,13 +448,13 @@ protected:
 
 public:
 // FIXME: protected or even private
-    template<qintptr I, typename T, Feature F>
+    template<quintptr I, typename T, Feature F>
     static MemberFunction<ObjectType, void, T> signalProxy(const Property<I, T, F> *)
     {
         return &ObjectType::template activateSignal<I, T>;
     }
 
-    template<qintptr I, typename T>
+    template<quintptr I, typename T>
     void activateSignal(T value)
     {
         // FIXME: maybe create hash

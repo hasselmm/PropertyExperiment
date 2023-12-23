@@ -287,7 +287,7 @@ private:
     template <HasFeature<PropertyAddresses> T>
     static void testPropertyAddresses(T &object)
     {
-        const auto objectAddress = reinterpret_cast<qintptr>(&object);
+        const auto objectAddress = reinterpret_cast<quintptr>(&object);
 
         QCOMPARE(object. constant.offset() + objectAddress, object. constant.address());
         QCOMPARE(object.notifying.offset() + objectAddress, object.notifying.address());
