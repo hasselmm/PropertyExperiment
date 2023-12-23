@@ -167,6 +167,16 @@ private:
         QCOMPARE(metaObject.methodCount(), 7);
     }
 
+    static void testMetaObject(mproperty::MObject &object)
+    {
+        testMetaObject<mproperty::MObject>(object);
+
+        QCOMPARE(sizeof(object.constant),           sizeof(QString));
+        QCOMPARE(sizeof(object.notifying),          sizeof(QString));
+        QCOMPARE(sizeof(object.writable),           sizeof(QString));
+        QCOMPARE(sizeof(object.notifyingChanged),      sizeof(char));
+    }
+
     template <class T>
     static void testMetaObject(T &)
     {
@@ -449,11 +459,6 @@ private:
                                     QSignalSpy    &writableSpy)
     {
         testPropertyChanges<mproperty::MObject>(object, notifyingSpy, writableSpy);
-
-        QCOMPARE(sizeof(object.constant),           sizeof(QString));
-        QCOMPARE(sizeof(object.notifying),          sizeof(QString));
-        QCOMPARE(sizeof(object.writable),           sizeof(QString));
-        QCOMPARE(sizeof(object.notifyingChanged),      sizeof(char));
 
         // object.constant = u"error"_s;    // compile error
         // object.notifying = u"error"_s;   // FIXME: currently would work, but shouldn't
