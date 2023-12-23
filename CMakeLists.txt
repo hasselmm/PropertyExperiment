@@ -16,8 +16,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Test)
 
-# https://clang.llvm.org/docs/DiagnosticsReference.html
-# https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html
+# https://releases.llvm.org/17.0.1/tools/clang/docs/DiagnosticsReference.html
+# https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Warning-Options.html
 codepoetry_add_compile_options(
     -Werror=all
     -Werror=arith-conversion
