@@ -233,7 +233,8 @@ private:
 
 // FIXME: simplify, attribute visibility, friends
 template<class ObjectType>
-class MetaObject : public QMetaObject
+class MetaObject
+    : public QMetaObject
 {
 public:
     template<quintptr I, typename T, Feature F>
@@ -411,7 +412,8 @@ public:
 ///
 template<class ObjectType, class BaseObjectType = QObject>
 requires std::is_base_of_v<QObject, BaseObjectType>
-class Object : public BaseObjectType
+class Object
+    : public BaseObjectType
 {
 public:
     using BaseType = BaseObjectType;

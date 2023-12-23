@@ -61,10 +61,7 @@ template<> constexpr auto implementedFeatures<sproperty::SObject>
 
 template<> constexpr uint skippedFeatures<nproperty::NObjectMacro>
     = skippedFeatures<>
-      | UniquePropertyIds
-      | PropertyAddresses
       | SignalAddresses
-      | PropertyChanges
       | PropertyNotifications
       | NotifyPointers
     ;
@@ -189,7 +186,8 @@ private slots:
 
     void testNObject()
     {
-        auto object = nproperty::HelloWorld{};
+        auto object     = nproperty::HelloWorld{};
+        auto metaObject = object.staticMetaObject;
 
         SHOW(object.hello.index());
         SHOW(object.world.index());
@@ -226,6 +224,9 @@ private slots:
         static_assert(!object.world.isResetable());
         static_assert( object.world.isNotifiable());
         static_assert( object.world.isWritable());
+
+        SHOW(metaObject.property(1).read(&object));
+        SHOW(metaObject.property(2).read(&object));
     }
 
 private:
