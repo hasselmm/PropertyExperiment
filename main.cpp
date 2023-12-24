@@ -74,6 +74,15 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
 ///
 #define SHOW(What) qInfo() << #What " =>" << (What)
 
+
+/// It's really helpful to also know the values of a failing test. Therefore
+/// let's use them, but have primitive fallback versions on older versions of Qt.
+///
+#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
+#define QCOMPARE_LT(Left, Right) QVERIFY((Left) < (Right))
+#define QCOMPARE_GE(Left, Right) QVERIFY((Left) >= (Right))
+#endif
+
 /// Some constants for property related tests
 ///
 const auto  constant1 = u"I am constant"_qs;
@@ -265,6 +274,9 @@ private:
     template <HasFeature<UniquePropertyIds> T>
     static void testUniquePropertyIds(T &object)
     {
+        static_assert(std::is_unsigned_v<decltype(object.constant.address())>);
+        static_assert(std::is_unsigned_v<decltype(object.constant.offset())>);
+
         const auto uniqueIds = QSet{object. constant.index(),
                                     object.notifying.index(),
                                     object. writable.index()};
@@ -299,6 +311,17 @@ private:
     static void testPropertyAddresses(T &object)
     {
         const auto objectAddress = reinterpret_cast<quintptr>(&object);
+
+        QCOMPARE_LT(object.notifying.offset(), sizeof(object));
+        QCOMPARE_LT(object. writable.offset(), sizeof(object));
+
+        QCOMPARE_GE(object. constant.address(), objectAddress);
+        QCOMPARE_GE(object.notifying.address(), objectAddress);
+        QCOMPARE_GE(object. writable.address(), objectAddress);
+
+        QCOMPARE_LT(object. constant.address(), objectAddress + sizeof(object));
+        QCOMPARE_LT(object.notifying.address(), objectAddress + sizeof(object));
+        QCOMPARE_LT(object. writable.address(), objectAddress + sizeof(object));
 
         QCOMPARE(object. constant.offset() + objectAddress, object. constant.address());
         QCOMPARE(object.notifying.offset() + objectAddress, object.notifying.address());
