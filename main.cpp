@@ -227,6 +227,16 @@ private slots:
 
         SHOW(metaObject.property(1).read(&object));
         SHOW(metaObject.property(2).read(&object));
+
+        using nproperty::detail::Prototype;
+
+        QCOMPARE(Prototype::get<nproperty::HelloWorld>(),
+                 Prototype::get<nproperty::HelloWorld>());
+        QCOMPARE(Prototype::get(&nproperty::HelloWorld::hello),
+                 Prototype::get(&nproperty::HelloWorld::hello));
+
+        QVERIFY(reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::hello))
+                != reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::world)));
     }
 
 private:

@@ -2,6 +2,7 @@
 #define NPROPERTY_NMETAOBJECT_P_H
 
 #include "nproperty.h"
+#include "ntypetraits.h"
 
 #include <QMetaObject>
 #include <QMetaType>
@@ -35,15 +36,12 @@ struct MemberInfo
     static consteval MemberInfo make()
     {
         const auto selector = static_cast<const Property *>(nullptr);
-        auto resolveOffset = []() -> quintptr {
-            using ObjectType = Property::ObjectType;
 
-            const auto buffer = std::array<char, sizeof(ObjectType)>{};
-            const auto object = reinterpret_cast<const ObjectType *>(buffer.data());
-            const auto member = &(object->*Member);
+        auto resolveOffset = [] {
+            using ObjectType = typename Property::ObjectType;
 
-            return reinterpret_cast<quintptr>(member)
-                   - reinterpret_cast<quintptr>(object);
+            return reinterpret_cast<quintptr>(Prototype::get(Member))
+                   - reinterpret_cast<quintptr>(Prototype::get<ObjectType>());
         };
 
         return MemberInfo{selector, std::move(resolveOffset)};

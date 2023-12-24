@@ -97,6 +97,8 @@ add_executable(
     nobject/nproperty.cpp
     nobject/nproperty.h
     nobject/nproperty_p.h
+    nobject/ntypetraits.cpp
+    nobject/ntypetraits.h
     sobject/sobjecttest.cpp
     sobject/sobjecttest.h
 )
