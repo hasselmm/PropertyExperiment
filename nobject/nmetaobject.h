@@ -78,6 +78,7 @@ class Object
     : public SuperType
 {
     friend nproperty::MetaObject<ObjectType, SuperType>;
+    friend nproperty::detail::MemberInfo;
 
 public:
     using MetaObject = nproperty::MetaObject<ObjectType, SuperType>;
@@ -93,6 +94,39 @@ protected:
     {
         return detail::Name{name, index};
     }
+
+    template<typename Value, auto Name>
+    void activateSignal(Value value)
+    {
+        auto metaCallArgs = std::array<void *, 2> { nullptr, &value };
+
+        QMetaObject::activate(this, &ObjectType::staticMetaObject,
+                              ObjectType::staticMetaObject.metaMethodForName(Name),
+                              metaCallArgs.data());
+    }
+
+public: // FIXME: make signalProxy() protected again
+    template<typename Value, auto Name, FeatureSet Features>
+    static detail::MemberFunction<ObjectType, void, Value>
+    signalProxy(const Property<Value, Name, Features> * = nullptr)
+    {
+        if (Q_LIKELY(canonical(Features).contains(Notify)))
+            return &ObjectType::template activateSignal<Value, Name>;
+
+        return nullptr;
+    }
+};
+
+/// Alias for a properties change notification signal.
+/// Use it to simulate the established Qt code style.
+///
+template<auto Property>
+requires(detail::DataMemberType<Property>::isNotifiable())
+class Signal
+{
+public:
+    constexpr auto get() const noexcept { return detail::Prototype::get(Property)->notifyPointer(); }
+    constexpr auto operator&() const noexcept { return get(); }
 };
 
 } // namespace nproperty

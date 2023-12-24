@@ -2,6 +2,7 @@
 #define NPROPERTY_NPROPERTY_H
 
 #include "nproperty_p.h"
+#include "ntypetraits.h"
 
 #include <QMetaObject>
 #include <QMetaType>
@@ -136,14 +137,18 @@ public:
 
     // verbose syntax
     void resetValue() { setValue({}); }
-    void setValue(ValueType value) { m_value = std::move(value); }
+    void setValue(ValueType newValue);
     [[nodiscard]] ValueType value() const { return m_value; }
 
     // Qt convenience syntax
+    Property &operator=(ValueType value) { setValue(std::move(value)); return *this; }
     [[nodiscard]] ValueType operator()() const { return value(); }
 
     // Python convenience syntax
     [[nodiscard]] operator ValueType() const { return value(); }
+
+    // Signal emission
+    void notify(Value newValue);
 
     // Evil address voodoo
     // FIXME: Hide this voodoo. Such evil shall not be public. This all operates on public API
@@ -175,9 +180,39 @@ public:
         return reinterpret_cast<ObjectType *>(address() - offset());
     }
 
+    [[nodiscard]] detail::MemberFunction<Object, void, Value> notifyPointer() const
+    {
+        if constexpr (isNotifiable())
+            return Object::signalProxy(this);
+
+        return nullptr;
+    }
+
 private:
     ValueType m_value;
 };
+
+template <class Object, typename Value, auto Name, FeatureSet Features>
+inline void Property<Object, Value, Name, Features>::setValue(Value newValue)
+{
+    if constexpr (isNotifiable()) {
+        if (std::exchange(m_value, std::move(newValue)) != m_value)
+            notify(m_value);
+    } else {
+        m_value = std::move(newValue);
+    }
+}
+
+template <class Object, typename Value, auto Name, FeatureSet Features>
+inline void Property<Object, Value, Name, Features>::notify(Value newValue)
+{
+    static_assert(hasFeature(Notify));
+    const auto target = object();
+    Q_ASSERT(target != nullptr);
+
+    const auto activateSignal = ObjectType::signalProxy(this);
+    (target->*activateSignal)(std::move(newValue));
+}
 
 } // namespace nproperty
 

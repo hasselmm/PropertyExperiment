@@ -25,10 +25,11 @@ struct MemberInfo
         Constructor,
     };
 
-    using OffsetFunction = quintptr(*)();
-    using   ReadFunction =     void(*)(const QObject *, void *);
-    using  WriteFunction =     void(*)(QObject *, void *);
-    using  ResetFunction =     void(*)(QObject *);
+    using  OffsetFunction =     quintptr(*)();
+    using    ReadFunction =         void(*)(const QObject *, void *);
+    using   WriteFunction =         void(*)(QObject *, void *);
+    using   ResetFunction =         void(*)(QObject *);
+    using PointerFunction = const void *(*)();
 
     consteval MemberInfo() noexcept = default;
 
@@ -36,15 +37,14 @@ struct MemberInfo
     static consteval MemberInfo make()
     {
         const auto selector = static_cast<const Property *>(nullptr);
+        using Object = typename Property::ObjectType;
 
-        auto resolveOffset = [] {
-            using ObjectType = typename Property::ObjectType;
-
+        const auto resolveOffset = [] {
             return reinterpret_cast<quintptr>(Prototype::get(Member))
-                   - reinterpret_cast<quintptr>(Prototype::get<ObjectType>());
+                   - reinterpret_cast<quintptr>(Prototype::get<Object>());
         };
 
-        return MemberInfo{selector, std::move(resolveOffset)};
+        return MemberInfo{selector, resolveOffset};
     }
 
     template <class Object, typename Value, auto Name, FeatureSet Features>
@@ -67,6 +67,10 @@ struct MemberInfo
             const auto property = Property<Object, Value, Name, Features>::resolve(object);
             property->resetValue();
         }}
+        , pointer{[] {
+            const auto proxy = Object::template signalProxy<Value, Name, Features>();
+            return *reinterpret_cast<const void *const *>(&proxy);
+        }}
     {}
 
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
@@ -85,6 +89,7 @@ struct MemberInfo
     ReadFunction    readProperty    = nullptr;
     WriteFunction   writeProperty   = nullptr;
     ResetFunction   resetProperty   = nullptr;
+    PointerFunction pointer         = nullptr;
 };
 
 /// Introspection information about a C++ class that can be used to build a `QMetaObject`.
@@ -95,9 +100,13 @@ public:
     [[nodiscard]] const std::vector<MemberInfo> &members() const noexcept
     { return m_members; }
 
-    template<quintptr N>
-    [[nodiscard]] quintptr memberOffset(Name<N> name) const noexcept
+    template<std::size_t N>
+    [[nodiscard]] quintptr memberOffset(const Name<N> &name) const noexcept
     { return memberOffset(name.index); }
+
+    template<std::size_t N>
+    [[nodiscard]] int metaMethodForName(const Name<N> &name) const noexcept
+    { return metaMethodForName(name.index); }
 
 protected:
     void emplace(MemberInfo &&member);
@@ -107,7 +116,10 @@ private:
     [[nodiscard]] const MemberInfo *propertyInfo(std::size_t offset) const noexcept;
     [[nodiscard]] const MemberInfo *memberInfo  (std::size_t offset) const noexcept;
 
-    [[nodiscard]] quintptr memberOffset(quintptr name) const noexcept;
+    [[nodiscard]] quintptr memberOffset(quintptr nameIndex) const noexcept;
+    [[nodiscard]] std::function<const MemberInfo *(quintptr)> makeOffsetToSignal() const noexcept;
+    [[nodiscard]] int metaMethodForPointer(const void *pointer) const noexcept;
+    [[nodiscard]] int metaMethodForName(quintptr nameIndex) const noexcept;
 
     void readProperty(const QObject *object, std::size_t offset, void *result) const;
     void writeProperty(QObject *object, std::size_t offset, void *value) const;
@@ -119,6 +131,7 @@ private:
 
     // these are offsets within `m_members`
     std::vector<std::size_t> m_propertyOffsets;
+    std::vector<std::size_t> m_signalOffsets;
 };
 
 /// Builds a QMetaObject from our static introspection information.

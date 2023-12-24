@@ -57,23 +57,11 @@ public:
     // FIXME: implement writers
     // Setter<QString> setWritable = &writable;
 
-    // FIXME: implement signals
-    // static constexpr Signal<&MObject::notifying> notifyingChanged = {};
-    // static constexpr Signal<&MObject::writable> writableChanged = {};
-
-    // FIXME: implement custom getters/setters
-    // N_PROPERTY(int, customReader) = {&NObjectMacro::customInt};
-    // N_PROPERTY(double, customWriter) = {reset   = &NObjectMacro::resetCustomDouble
-    //                                     writer  = &NObjectMacro::setCustomDouble,
-    //                                     reader  = &NObjectMacro::customDuble,
-    //                                     initial =  42};
+    static constexpr Signal<&NObjectMacro::notifying> notifyingChanged = {};
+    static constexpr Signal<&NObjectMacro::writable>  writableChanged  = {};
 
     // FIXME: but maybe generate just exactly that?
     void setWritable(QString newValue) { writable.setValue(std::move(newValue)); }
-
-    // FIXME: remove fake signals
-    void notifyingChanged(QString) {}
-    void writableChanged(QString) {}
 };
 
 /// This class implements an NObject based QObject using C++ 20.

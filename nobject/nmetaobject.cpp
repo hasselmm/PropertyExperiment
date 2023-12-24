@@ -5,19 +5,78 @@
 #include <QObject>
 #include <QLoggingCategory>
 
+#include <ranges>
+
 namespace nproperty::detail {
 
 namespace {
+
 Q_LOGGING_CATEGORY(lcMetaObject, "nproperty.metaobject");
+
+namespace ranges {
+
+template<typename T>
+concept HasBinarySearch = std::totally_ordered<T>
+                          && !std::is_pointer_v<T>
+                          && !std::is_floating_point_v<T>;
+
+static_assert(HasBinarySearch<int>);
+static_assert(HasBinarySearch<quintptr>);
+static_assert(!HasBinarySearch<double>);
+static_assert(!HasBinarySearch<const void *>);
+
+template<typename Range, typename T, typename Projection = std::identity>
+std::ranges::borrowed_iterator_t<Range> find(Range &&range, const T &value,
+                                             Projection projection = {})
+{
+    if constexpr (std::totally_ordered<T> && !std::is_pointer_v<T>) {
+        return std::ranges::lower_bound(range, value, {}, projection);
+    } else {
+        return std::ranges::find(range, value, projection);
+    }
 }
+
+int indexOf(auto &&range, const auto &value)
+{
+    if (const auto it = find(range, value); it != std::cend(range))
+        return static_cast<int>(it - std::cbegin(range));
+
+    return -1;
+}
+
+} // namespace ranges
+
+quintptr memberToNameIndex(const MemberInfo &member)
+{
+    return member.name.index;
+}
+
+quintptr memberPointerToNameIndex(const MemberInfo *member)
+{
+    Q_ASSERT(member != nullptr);
+    return member->name.index;
+}
+
+const void *memberToPointer(const MemberInfo *member)
+{
+    Q_ASSERT(member != nullptr);
+    Q_ASSERT(member->pointer);
+    return member->pointer();
+}
+
+} // namespace
 
 void MetaObjectData::emplace(MemberInfo &&member)
 {
     if (Q_UNLIKELY(!member))
         return;
 
-    if (member.type == MemberInfo::Type::Property)
+    if (member.type == MemberInfo::Type::Property) {
+        if (canonical(member.features).contains(Feature::Notify))
+            m_signalOffsets.emplace_back(m_members.size());
+
         m_propertyOffsets.emplace_back(m_members.size());
+    }
 
     m_members.emplace_back(std::move(member));
 }
@@ -78,19 +137,45 @@ const MemberInfo *MetaObjectData::memberInfo(std::size_t offset) const noexcept
     return &m_members[offset];
 }
 
-quintptr MetaObjectData::memberOffset(quintptr name) const noexcept
+quintptr MetaObjectData::memberOffset(quintptr nameIndex) const noexcept
 {
-    const auto memberIndex = [](const MemberInfo &member) {
-        return member.name.index;
+    if (const auto it = ranges::find(m_members, nameIndex, memberToNameIndex);
+        Q_LIKELY(it != m_members.cend())) {
+        Q_ASSERT(it->resolveOffset);
+        return it->resolveOffset();
+    }
+
+    return 0;
+}
+
+std::function<const MemberInfo *(quintptr)> MetaObjectData::makeOffsetToSignal() const noexcept
+{
+    return [this](quintptr offset) {
+        const auto signalInfo = memberInfo(offset);
+
+        Q_ASSERT(signalInfo != nullptr);
+        Q_ASSERT(signalInfo->type == MemberInfo::Type::Signal
+                 || signalInfo->type == MemberInfo::Type::Property);
+        Q_ASSERT(signalInfo->pointer != nullptr);
+
+        return signalInfo;
     };
+}
 
-    const auto it = std::ranges::lower_bound(m_members, name, {}, memberIndex);
+int MetaObjectData::metaMethodForPointer(const void *pointer) const noexcept
+{
+    return ranges::indexOf(m_signalOffsets
+                               | std::views::transform(makeOffsetToSignal())
+                               | std::views::transform(memberToPointer),
+                           pointer);
+}
 
-    if (Q_UNLIKELY(it == m_members.cend()))
-        return 0;
-
-    Q_ASSERT(it->resolveOffset);
-    return it->resolveOffset();
+int MetaObjectData::metaMethodForName(quintptr nameIndex) const noexcept
+{
+    return ranges::indexOf(m_signalOffsets
+                               | std::views::transform(makeOffsetToSignal())
+                               | std::views::transform(memberPointerToNameIndex),
+                           nameIndex);
 }
 
 void MetaObjectData::readProperty(const QObject *object, std::size_t offset, void *result) const
@@ -126,9 +211,9 @@ void MetaObjectData::resetProperty(QObject *object, std::size_t offset) const
     }
 }
 
-void MetaObjectData::indexOfMethod(int *, void *) const noexcept
+void MetaObjectData::indexOfMethod(int *result, void *pointer) const noexcept
 {
-    // FIXME: implement
+    *result = metaMethodForPointer(pointer);
 }
 
 const QMetaObject *MetaObjectBuilder::build(const QMetaType          &metaType,
