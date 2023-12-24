@@ -22,6 +22,7 @@ enum Feature
     SignalAddresses         = 1 << 5,
     PropertyChanges         = 1 << 6,
     PropertyNotifications   = 1 << 7,
+    NotifyPointers          = 1 << 8,
 };
 
 /// By default all features are considered enabled, and no features are skipped.
@@ -46,12 +47,14 @@ concept HasFeature = (isImplementedFeature<feature, T>
 template<> constexpr auto implementedFeatures<aproperty::AObject>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
-      & ~PropertyAddresses;     // properties do not have their own objects with moc
+      & ~PropertyAddresses      // properties do not have their own objects with moc
+      & ~NotifyPointers;        // properties do not have their own objects with moc
 
 template<> constexpr auto implementedFeatures<sproperty::SObject>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
-      & ~PropertyAddresses;     // properties do not have their own objects with moc
+      & ~PropertyAddresses      // properties do not have their own objects with moc
+      & ~NotifyPointers;        // properties do not have their own objects with moc
 
 /// Just a tiny wrapper with simple name for the pretty verbose
 /// `!std::is_member_function_pointer_v<decltype(&T::member)>`.
@@ -124,6 +127,9 @@ private slots:
 
     void testSignalAddresses()              { runTestFunction(); }
     void testSignalAddresses_data()         { MAKE_TESTDATA(testSignalAddresses); }
+
+    void testNotifyPointers()               { runTestFunction(); }
+    void testNotifyPointers_data()          { MAKE_TESTDATA(testNotifyPointers); }
 
     void testPropertyChanges()              { runTestFunction(); }
     void testPropertyChanges_data()         { MAKE_TESTDATA(testPropertyChanges); }
@@ -371,18 +377,34 @@ private:
         QVERIFY(&T::notifyingChanged != &T::writableChanged);
     }
 
-    static void testSignalAddresses(mproperty::MObject &object)
-    {
-        QCOMPARE(object.notifyingChanged.get(), &object.notifyingChanged);
-        QCOMPARE(object. writableChanged.get(), &object. writableChanged);
-
-        testSignalAddresses<mproperty::MObject>(object);
-    }
-
     template <class T>
     static void testSignalAddresses(T &)
     {
         if (isSkippedFeature<SignalAddresses, T>)
+            QSKIP("Not implemented yet");
+    }
+
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that notify pointers of roperties are correct
+    /// --------------------------------------------------------------------------------------------
+
+    template <HasFeature<NotifyPointers> T>
+    static void testNotifyPointers(T &object)
+    {
+        QCOMPARE(object.notifying.notifyPointer(), &object.notifyingChanged);
+        QCOMPARE(object.writable .notifyPointer(), &object. writableChanged);
+
+        QCOMPARE(object.notifyingChanged.get(),    &object.notifyingChanged);
+        QCOMPARE(object.writableChanged .get(),    &object. writableChanged);
+
+        QCOMPARE(object.notifying.notifyPointer(),  object.notifyingChanged.get());
+        QCOMPARE(object.writable .notifyPointer(),  object. writableChanged.get());
+    }
+
+    template <class T>
+    static void testNotifyPointers(T &)
+    {
+        if (isSkippedFeature<NotifyPointers, T>)
             QSKIP("Not implemented yet");
     }
 
