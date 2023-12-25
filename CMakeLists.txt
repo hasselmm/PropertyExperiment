@@ -57,6 +57,14 @@ codepoetry_add_compile_options(
     GNU
 )
 
+# Clang is wrong about this: C++ 20 allows empty variadic argument lists
+# for macros: https://eel.is/c++draft/cpp.replace.general#5
+# https://github.com/llvm/llvm-project/issues/76375
+codepoetry_add_compile_options(
+    -Wno-gnu-zero-variadic-macro-arguments
+    CLANG
+)
+
 # https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options
 codepoetry_add_compile_options(
     /W4 /permissive- /utf-8
