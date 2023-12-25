@@ -14,6 +14,13 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_program(CCACHE_EXECUTABLE ccache)
+
+if (CCACHE_EXECUTABLE)
+    message(STATUS "Using ccache: ${CCACHE_EXECUTABLE}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_EXECUTABLE}")
+endif()
+
 find_package(Qt6 REQUIRED COMPONENTS Core Test)
 
 # https://releases.llvm.org/17.0.1/tools/clang/docs/DiagnosticsReference.html
