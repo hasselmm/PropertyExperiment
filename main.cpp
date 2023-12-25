@@ -1,6 +1,6 @@
-#include "aobject/aobject.h"
-#include "mobject/mobject.h"
-#include "sobject/sobject.h"
+#include "aobject/aobjecttest.h"
+#include "mobject/mobjecttest.h"
+#include "sobject/sobjecttest.h"
 
 #include <QSignalSpy>
 #include <QTest>
@@ -13,14 +13,16 @@ namespace {
 ///
 enum Feature
 {
-    None                = 0,
-    MetaObject          = 1 << 0,
-    PropertyDefinitions = 1 << 1,
-    UniquePropertyIds   = 1 << 2,
-    PropertyAddresses   = 1 << 3,
-    MethodDefinitions   = 1 << 4,
-    SignalAddresses     = 1 << 5,
-    PropertyChanges     = 1 << 6,
+    None                    = 0,
+    MetaObject              = 1 << 0,
+    PropertyDefinitions     = 1 << 1,
+    UniquePropertyIds       = 1 << 2,
+    PropertyAddresses       = 1 << 3,
+    MethodDefinitions       = 1 << 4,
+    SignalAddresses         = 1 << 5,
+    PropertyChanges         = 1 << 6,
+    PropertyNotifications   = 1 << 7,
+    NotifyPointers          = 1 << 8,
 };
 
 /// By default all features are considered enabled, and no features are skipped.
@@ -45,13 +47,14 @@ concept HasFeature = (isImplementedFeature<feature, T>
 template<> constexpr auto implementedFeatures<aproperty::AObject>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
-      & ~PropertyAddresses;     // properties do not have their own objects with moc
+      & ~PropertyAddresses      // properties do not have their own objects with moc
+      & ~NotifyPointers;        // properties do not have their own objects with moc
 
 template<> constexpr auto implementedFeatures<sproperty::SObject>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
-      & ~PropertyAddresses;     // properties do not have their own objects with moc
-
+      & ~PropertyAddresses      // properties do not have their own objects with moc
+      & ~NotifyPointers;        // properties do not have their own objects with moc
 
 /// Just a tiny wrapper with simple name for the pretty verbose
 /// `!std::is_member_function_pointer_v<decltype(&T::member)>`.
@@ -71,7 +74,16 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
 ///
 #define SHOW(What) qInfo() << #What " =>" << (What)
 
-/// Some constants for testPropertyChanges()
+
+/// It's really helpful to also know the values of a failing test. Therefore
+/// let's use them, but have primitive fallback versions on older versions of Qt.
+///
+#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
+#define QCOMPARE_LT(Left, Right) QVERIFY((Left) < (Right))
+#define QCOMPARE_GE(Left, Right) QVERIFY((Left) >= (Right))
+#endif
+
+/// Some constants for property related tests
 ///
 const auto  constant1 = u"I am constant"_qs;
 const auto notifying1 = u"I am observing"_qs;
@@ -107,26 +119,32 @@ class PropertyExperiment: public QObject
     /// --------------------------------------------------------------------------------------------
 
 private slots:
-    void testMetaObject()               { runTestFunction(); }
-    void testMetaObject_data()          { MAKE_TESTDATA(testMetaObject); }
+    void testMetaObject()                   { runTestFunction(); }
+    void testMetaObject_data()              { MAKE_TESTDATA(testMetaObject); }
 
-    void testPropertyDefinitions()      { runTestFunction(); }
-    void testPropertyDefinitions_data() { MAKE_TESTDATA(testPropertyDefinitions); }
+    void testPropertyDefinitions()          { runTestFunction(); }
+    void testPropertyDefinitions_data()     { MAKE_TESTDATA(testPropertyDefinitions); }
 
-    void testUniquePropertyIds()        { runTestFunction(); }
-    void testUniquePropertyIds_data()   { MAKE_TESTDATA(testUniquePropertyIds); }
+    void testUniquePropertyIds()            { runTestFunction(); }
+    void testUniquePropertyIds_data()       { MAKE_TESTDATA(testUniquePropertyIds); }
 
-    void testPropertyAddresses()        { runTestFunction(); }
-    void testPropertyAddresses_data()   { MAKE_TESTDATA(testPropertyAddresses); }
+    void testPropertyAddresses()            { runTestFunction(); }
+    void testPropertyAddresses_data()       { MAKE_TESTDATA(testPropertyAddresses); }
 
-    void testMethodDefinitions()        { runTestFunction(); }
-    void testMethodDefinitions_data()   { MAKE_TESTDATA(testMethodDefinitions); }
+    void testMethodDefinitions()            { runTestFunction(); }
+    void testMethodDefinitions_data()       { MAKE_TESTDATA(testMethodDefinitions); }
 
-    void testSignalAddresses()          { runTestFunction(); }
-    void testSignalAddresses_data()     { MAKE_TESTDATA(testSignalAddresses); }
+    void testSignalAddresses()              { runTestFunction(); }
+    void testSignalAddresses_data()         { MAKE_TESTDATA(testSignalAddresses); }
 
-    void testPropertyChanges()          { runTestFunction(); }
-    void testPropertyChanges_data()     { MAKE_TESTDATA(testPropertyChanges); }
+    void testNotifyPointers()               { runTestFunction(); }
+    void testNotifyPointers_data()          { MAKE_TESTDATA(testNotifyPointers); }
+
+    void testPropertyChanges()              { runTestFunction(); }
+    void testPropertyChanges_data()         { MAKE_TESTDATA(testPropertyChanges); }
+
+    void testPropertyNotifications()        { runTestFunction(); }
+    void testPropertyNotifications_data()   { MAKE_TESTDATA(testPropertyNotifications); }
 
 private:
 
@@ -165,6 +183,16 @@ private:
         QCOMPARE(metaObject.superClass()->className(), expectedSuperClassName);
         QCOMPARE(metaObject.propertyCount(), 4);
         QCOMPARE(metaObject.methodCount(), 7);
+    }
+
+    static void testMetaObject(mproperty::MObject &object)
+    {
+        testMetaObject<mproperty::MObject>(object);
+
+        QCOMPARE(sizeof(object.constant),           sizeof(QString));
+        QCOMPARE(sizeof(object.notifying),          sizeof(QString));
+        QCOMPARE(sizeof(object.writable),           sizeof(QString));
+        QCOMPARE(sizeof(object.notifyingChanged),      sizeof(char));
     }
 
     template <class T>
@@ -210,7 +238,7 @@ private:
         QCOMPARE(constant.isEnumType(),         false);
         QCOMPARE(constant.hasNotifySignal(),    false);
         QCOMPARE(constant.revision(),               0);
-        QCOMPARE(constant.hasStdCppSet(),       false); // FIXME why is this false for SObject?
+        QCOMPARE(constant.hasStdCppSet(),       false); // QTBUG-120378
         QCOMPARE(constant.isAlias(),            false);
 
         QVERIFY (notifying.isValid());
@@ -220,6 +248,7 @@ private:
         QCOMPARE(notifying.isWritable(),        false);
         QCOMPARE(notifying.isConstant(),        false);
         QCOMPARE(notifying.hasNotifySignal(),    true);
+        QCOMPARE(notifying.hasStdCppSet(),      false); // QTBUG-120378
 
         QVERIFY (writable.isValid());
         QCOMPARE(writable.name(),          "writable");
@@ -228,6 +257,7 @@ private:
         QCOMPARE(writable.isWritable(),          true);
         QCOMPARE(writable.isConstant(),         false);
         QCOMPARE(writable.hasNotifySignal(),     true);
+        QCOMPARE(writable.hasStdCppSet(),        true);
     }
 
     template <class T>
@@ -244,6 +274,9 @@ private:
     template <HasFeature<UniquePropertyIds> T>
     static void testUniquePropertyIds(T &object)
     {
+        static_assert(std::is_unsigned_v<decltype(object.constant.address())>);
+        static_assert(std::is_unsigned_v<decltype(object.constant.offset())>);
+
         const auto uniqueIds = QSet{object. constant.index(),
                                     object.notifying.index(),
                                     object. writable.index()};
@@ -277,7 +310,18 @@ private:
     template <HasFeature<PropertyAddresses> T>
     static void testPropertyAddresses(T &object)
     {
-        const auto objectAddress = reinterpret_cast<qintptr>(&object);
+        const auto objectAddress = reinterpret_cast<quintptr>(&object);
+
+        QCOMPARE_LT(object.notifying.offset(), sizeof(object));
+        QCOMPARE_LT(object. writable.offset(), sizeof(object));
+
+        QCOMPARE_GE(object. constant.address(), objectAddress);
+        QCOMPARE_GE(object.notifying.address(), objectAddress);
+        QCOMPARE_GE(object. writable.address(), objectAddress);
+
+        QCOMPARE_LT(object. constant.address(), objectAddress + sizeof(object));
+        QCOMPARE_LT(object.notifying.address(), objectAddress + sizeof(object));
+        QCOMPARE_LT(object. writable.address(), objectAddress + sizeof(object));
 
         QCOMPARE(object. constant.offset() + objectAddress, object. constant.address());
         QCOMPARE(object.notifying.offset() + objectAddress, object.notifying.address());
@@ -356,14 +400,6 @@ private:
         QVERIFY(&T::notifyingChanged != &T::writableChanged);
     }
 
-    static void testSignalAddresses(mproperty::MObject &object)
-    {
-        QCOMPARE(object.notifyingChanged.get(), &object.notifyingChanged);
-        QCOMPARE(object. writableChanged.get(), &object. writableChanged);
-
-        testSignalAddresses<mproperty::MObject>(object);
-    }
-
     template <class T>
     static void testSignalAddresses(T &)
     {
@@ -372,16 +408,77 @@ private:
     }
 
     /// --------------------------------------------------------------------------------------------
-    /// Verify that properties can be changed, and emit the expected signals.
+    /// Verify that notify pointers of roperties are correct
+    /// --------------------------------------------------------------------------------------------
+
+    template <HasFeature<NotifyPointers> T>
+    static void testNotifyPointers(T &object)
+    {
+        QCOMPARE(object.notifying.notifyPointer(), &object.notifyingChanged);
+        QCOMPARE(object.writable .notifyPointer(), &object. writableChanged);
+
+        QCOMPARE(object.notifyingChanged.get(),    &object.notifyingChanged);
+        QCOMPARE(object.writableChanged .get(),    &object. writableChanged);
+
+        QCOMPARE(object.notifying.notifyPointer(),  object.notifyingChanged.get());
+        QCOMPARE(object.writable .notifyPointer(),  object. writableChanged.get());
+    }
+
+    template <class T>
+    static void testNotifyPointers(T &)
+    {
+        if (isSkippedFeature<NotifyPointers, T>)
+            QSKIP("Not implemented yet");
+    }
+
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that properties can be changed, and read
     /// --------------------------------------------------------------------------------------------
 
     template <HasFeature<PropertyChanges> T>
     static void testPropertyChanges(T &object)
     {
-        auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
-        auto writableSpy  = QSignalSpy{&object, &T::writableChanged};
+        QCOMPARE(object.constant(),             constant1);
+        QCOMPARE(object.property("constant"),   constant1);
 
-        testPropertyChanges(object, notifyingSpy, writableSpy);
+        QCOMPARE(object.notifying(),            notifying1);
+        QCOMPARE(object.property("notifying"),  notifying1);
+
+        QCOMPARE(object.writable(),             writable1);
+        QCOMPARE(object.property("writable"),   writable1);
+
+        object.modifyNotifying();
+
+        QCOMPARE(object.notifying(),            notifying2);
+        QCOMPARE(object.property("notifying"),  notifying2);
+
+        object.setWritable(writable2);
+
+        QCOMPARE(object.writable(),             writable2);
+        QCOMPARE(object.property("writable"),   writable2);
+
+        object.setProperty("notifying",         metacall1);
+
+        QCOMPARE(object.notifying(),            notifying2);
+        QCOMPARE(object.property("notifying"),  notifying2);
+
+        object.setProperty("writable",          metacall1);
+
+        QCOMPARE(object.writable(),             metacall1);
+        QCOMPARE(object.property("writable"),   metacall1);
+    }
+
+    static void testPropertyChanges(mproperty::MObject &object)
+    {
+        testPropertyChanges<mproperty::MObject>(object);
+
+        // object.constant = u"error"_s;    // compile error
+        // object.notifying = u"error"_s;   // FIXME: currently would work, but shouldn't
+
+        object.writable = writable3;
+
+        QCOMPARE(object.writable(),             writable3);
+        QCOMPARE(object.property("writable"),   writable3);
     }
 
     template <class T>
@@ -391,10 +488,37 @@ private:
             QSKIP("Not implemented yet");
     }
 
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that properties can be changed, and emit the expected signals.
+    /// --------------------------------------------------------------------------------------------
+
+    template <HasFeature<PropertyNotifications> T>
+    static void testPropertyNotifications(T &object)
+    {
+        const auto metaObject = T::staticMetaObject;
+
+        QVERIFY(metaObject.d.data);
+
+        const auto offset            = metaObject.methodOffset();
+        const auto notifyingChanged  = metaObject.method(offset + 0);
+        const auto writableChanged   = metaObject.method(offset + 1);
+
+        QCOMPARE(QMetaMethod::fromSignal(&T::notifyingChanged), notifyingChanged);
+        QCOMPARE(QMetaMethod::fromSignal(&T::writableChanged),   writableChanged);
+
+        auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
+        auto writableSpy  = QSignalSpy{&object, &T::writableChanged};
+
+        QVERIFY(notifyingSpy.isValid());
+        QVERIFY(writableSpy. isValid());
+
+        testPropertyNotifications(object, notifyingSpy, writableSpy);
+    }
+
     template <class T>
-    static void testPropertyChanges(T          &object,
-                                    QSignalSpy &notifyingSpy,
-                                    QSignalSpy &writableSpy)
+    static void testPropertyNotifications(T          &object,
+                                          QSignalSpy &notifyingSpy,
+                                          QSignalSpy &writableSpy)
     {
         QCOMPARE(object.constant(),             constant1);
         QCOMPARE(object.property("constant"),   constant1);
@@ -444,16 +568,11 @@ private:
         QCOMPARE(writableSpy,                   writableSpy3);
     }
 
-    static void testPropertyChanges(mproperty::MObject &object,
-                                    QSignalSpy   &notifyingSpy,
-                                    QSignalSpy    &writableSpy)
+    static void testPropertyNotifications(mproperty::MObject &object,
+                                          QSignalSpy   &notifyingSpy,
+                                          QSignalSpy    &writableSpy)
     {
-        testPropertyChanges<mproperty::MObject>(object, notifyingSpy, writableSpy);
-
-        QCOMPARE(sizeof(object.constant),           sizeof(QString));
-        QCOMPARE(sizeof(object.notifying),          sizeof(QString));
-        QCOMPARE(sizeof(object.writable),           sizeof(QString));
-        QCOMPARE(sizeof(object.notifyingChanged),      sizeof(char));
+        testPropertyNotifications<mproperty::MObject>(object, notifyingSpy, writableSpy);
 
         // object.constant = u"error"_s;    // compile error
         // object.notifying = u"error"_s;   // FIXME: currently would work, but shouldn't
@@ -464,6 +583,13 @@ private:
         QCOMPARE(object.property("writable"),   writable3);
 
         QCOMPARE(writableSpy,                   writableSpy4);
+    }
+
+    template <class T>
+    static void testPropertyNotifications(T &)
+    {
+        if (isSkippedFeature<PropertyNotifications, T>)
+            QSKIP("Not implemented yet");
     }
 
     /// --------------------------------------------------------------------------------------------

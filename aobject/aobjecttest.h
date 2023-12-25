@@ -1,5 +1,5 @@
-#ifndef AOBJECT_H
-#define AOBJECT_H
+#ifndef AOBJECTTEST_H
+#define AOBJECTTEST_H
 
 #include "aproperty.h"
 
@@ -33,4 +33,4 @@ public:
 
 } // namespace aproperty
 
-#endif // AOBJECT_H
+#endif // AOBJECTTEST_H

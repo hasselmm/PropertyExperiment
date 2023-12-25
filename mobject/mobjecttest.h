@@ -1,5 +1,5 @@
-#ifndef MOBJECT_H
-#define MOBJECT_H
+#ifndef MOBJECTTEST_H
+#define MOBJECTTEST_H
 
 #include "mproperty.h"
 
@@ -46,4 +46,4 @@ public:
 
 } // namespace mproperty
 
-#endif // MOBJECT_H
+#endif // MOBJECTTEST_H

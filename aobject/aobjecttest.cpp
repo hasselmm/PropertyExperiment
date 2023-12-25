@@ -1,5 +1,5 @@
-#include "aobject.h"
+#include "aobjecttest.h"
 
 static_assert(sizeof(aproperty::AObject) >= sizeof(QObject));
 
-#include "moc_aobject.cpp"
+#include "moc_aobjecttest.cpp"

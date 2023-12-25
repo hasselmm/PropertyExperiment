@@ -14,6 +14,13 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_program(CCACHE_EXECUTABLE ccache)
+
+if (CCACHE_EXECUTABLE)
+    message(STATUS "Using ccache: ${CCACHE_EXECUTABLE}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_EXECUTABLE}")
+endif()
+
 find_package(Qt6 REQUIRED COMPONENTS Core Test)
 
 # https://releases.llvm.org/17.0.1/tools/clang/docs/DiagnosticsReference.html
@@ -24,7 +31,9 @@ codepoetry_add_compile_options(
     -Werror=comment
     -Werror=conversion
     -Werror=extra
+    -Werror=format
     -Werror=pedantic
+    -Werror=reorder
     -Werror=sign-compare
     -Werror=sign-conversion
     -Werror=switch
@@ -53,16 +62,16 @@ add_executable(
     PropertyExperiment
     main.cpp
 
-    aobject/aobject.cpp
-    aobject/aobject.h
+    aobject/aobjecttest.cpp
+    aobject/aobjecttest.h
     aobject/aproperty.cpp
     aobject/aproperty.h
-    mobject/mobject.cpp
-    mobject/mobject.h
+    mobject/mobjecttest.cpp
+    mobject/mobjecttest.h
     mobject/mproperty.cpp
     mobject/mproperty.h
-    sobject/sobject.cpp
-    sobject/sobject.h
+    sobject/sobjecttest.cpp
+    sobject/sobjecttest.h
 )
 
 target_link_libraries(
