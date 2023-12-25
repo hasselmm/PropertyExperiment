@@ -1,4 +1,4 @@
-#include "sobject.h"
+#include "sobjecttest.h"
 
 namespace sproperty {
 
@@ -30,3 +30,5 @@ QString SObject::writable() const
 }
 
 } // namespace sproperty
+
+#include "moc_sobjecttest.cpp"

@@ -1,4 +1,4 @@
-#include "mobject.h"
+#include "mobjecttest.h"
 
 namespace mproperty {
 
@@ -16,4 +16,4 @@ M_OBJECT_IMPLEMENTATION(MObject, constant, notifying, writable)
 
 } // namespace mproperty
 
-#include "moc_mobject.cpp"
+#include "moc_mobjecttest.cpp"
