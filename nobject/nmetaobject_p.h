@@ -60,12 +60,16 @@ struct MemberInfo
             *reinterpret_cast<Value *>(result) = property->value();
         }}
         , writeProperty{[](QObject *object, void *value) {
-            const auto property = Property<Object, Value, Name, Features>::resolve(object);
-            property->setValue(*reinterpret_cast<Value *>(value));
+            if constexpr (canonical(Features).contains(Write)) {
+                const auto property = Property<Object, Value, Name, Features>::resolve(object);
+                property->setValue(*reinterpret_cast<Value *>(value));
+            }
         }}
         , resetProperty{[](QObject *object) {
-            const auto property = Property<Object, Value, Name, Features>::resolve(object);
-            property->resetValue();
+            if constexpr (canonical(Features).contains(Reset)) {
+                const auto property = Property<Object, Value, Name, Features>::resolve(object);
+                property->resetValue();
+            }
         }}
         , pointer{[] {
             const auto proxy = Object::template signalProxy<Value, Name, Features>();

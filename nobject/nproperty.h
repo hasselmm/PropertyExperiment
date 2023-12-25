@@ -119,6 +119,8 @@ public:
     using ObjectType = Object;
     using  ValueType = Value;
 
+    friend ObjectType;
+
     Property() noexcept = default;
     Property(ValueType value) noexcept
         : m_value{std::move(value)}
@@ -135,21 +137,36 @@ public:
     [[nodiscard]] static constexpr bool isNotifiable() noexcept         { return hasFeature(Feature::Notify); }
     [[nodiscard]] static constexpr bool isWritable() noexcept           { return hasFeature(Feature::Write); }
 
-    // verbose syntax
-    void resetValue() { setValue({}); }
-    void setValue(ValueType newValue);
-    [[nodiscard]] ValueType value() const { return m_value; }
+    using PublicValue = std::conditional_t<isWritable(), ValueType, std::monostate>;
 
-    // Qt convenience syntax
-    Property &operator=(ValueType value) { setValue(std::move(value)); return *this; }
-    [[nodiscard]] ValueType operator()() const { return value(); }
+    /// verbose syntax
+    ///
+    void resetValue();
+    void setValue(PublicValue newValue);
+    ValueType value() const { return m_value; }
 
-    // Python convenience syntax
-    [[nodiscard]] operator ValueType() const { return value(); }
+    /// Qt convenience syntax
+    ///
+    ValueType operator()() const { return value(); }
 
-    // Signal emission
+    /// Python convenience syntax
+    ///
+    Property &operator=(PublicValue newValue) { setValue(std::move(newValue)); return *this; }
+    operator ValueType() const { return value(); }
+
+    /// Signal emission
+    ///
     void notify(Value newValue);
 
+protected:
+    using ProtectedValue = std::conditional_t<!isWritable(), ValueType, std::monostate>;
+
+    void setValue(ProtectedValue newValue);
+    void setValueImpl(Value &&newValue);
+
+    Property &operator=(ProtectedValue newValue) { setValue(std::move(newValue)); return *this; }
+
+public:
     // Evil address voodoo
     // FIXME: Hide this voodoo. Such evil shall not be public. This all operates on public API
     // and therefore could be free-standing or member functions in the details namespace.
@@ -193,7 +210,22 @@ private:
 };
 
 template <class Object, typename Value, auto Name, FeatureSet Features>
-inline void Property<Object, Value, Name, Features>::setValue(Value newValue)
+inline void Property<Object, Value, Name, Features>::setValue(PublicValue newValue)
+{
+    static_assert(isWritable());
+    static_assert(std::is_same_v<decltype(newValue), Value>);
+    setValueImpl(std::move(newValue));
+}
+
+template <class Object, typename Value, auto Name, FeatureSet Features>
+inline void Property<Object, Value, Name, Features>::setValue(ProtectedValue newValue)
+{
+    static_assert(std::is_same_v<decltype(newValue), Value>);
+    setValueImpl(std::move(newValue));
+}
+
+template <class Object, typename Value, auto Name, FeatureSet Features>
+inline void Property<Object, Value, Name, Features>::setValueImpl(Value &&newValue)
 {
     if constexpr (isNotifiable()) {
         if (std::exchange(m_value, std::move(newValue)) != m_value)
