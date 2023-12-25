@@ -448,8 +448,22 @@ private:
     template <HasFeature<PropertyNotifications> T>
     static void testPropertyNotifications(T &object)
     {
+        const auto metaObject = T::staticMetaObject;
+
+        QVERIFY(metaObject.d.data);
+
+        const auto offset            = metaObject.methodOffset();
+        const auto notifyingChanged  = metaObject.method(offset + 0);
+        const auto writableChanged   = metaObject.method(offset + 1);
+
+        QCOMPARE(QMetaMethod::fromSignal(&T::notifyingChanged), notifyingChanged);
+        QCOMPARE(QMetaMethod::fromSignal(&T::writableChanged),   writableChanged);
+
         auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
         auto writableSpy  = QSignalSpy{&object, &T::writableChanged};
+
+        QVERIFY(notifyingSpy.isValid());
+        QVERIFY(writableSpy. isValid());
 
         testPropertyNotifications(object, notifyingSpy, writableSpy);
     }
