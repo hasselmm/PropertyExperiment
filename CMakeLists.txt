@@ -31,7 +31,9 @@ codepoetry_add_compile_options(
     -Werror=comment
     -Werror=conversion
     -Werror=extra
+    -Werror=format
     -Werror=pedantic
+    -Werror=reorder
     -Werror=sign-compare
     -Werror=sign-conversion
     -Werror=switch
