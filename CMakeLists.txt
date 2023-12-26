@@ -27,7 +27,6 @@ find_package(Qt6 REQUIRED COMPONENTS Core Test)
 # https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Warning-Options.html
 codepoetry_add_compile_options(
     -Werror=all
-    -Werror=arith-conversion
     -Werror=comment
     -Werror=conversion
     -Werror=extra
@@ -51,6 +50,11 @@ codepoetry_add_compile_options(
     -Werror=invalid-constexpr
     CLANG_MINIMUM_VERSION 15
     GNU_MINIMUM_VERSION 13
+)
+
+codepoetry_add_compile_options(
+    -Werror=arith-conversion
+    GNU
 )
 
 # https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options
