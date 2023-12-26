@@ -22,6 +22,7 @@ if (CCACHE_EXECUTABLE)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Test)
+message(STATUS "Using Qt ${Qt6_VERSION}")
 
 # https://releases.llvm.org/17.0.1/tools/clang/docs/DiagnosticsReference.html
 # https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Warning-Options.html
@@ -110,5 +111,8 @@ add_custom_target(
 
 add_custom_target(
     GitHub SOURCES
-    .github/workflows/cmake-build.yml
+    .github/workflows/autotest-clang.yml
+    .github/workflows/autotest-gcc.yml
+    .github/workflows/autotest-msvc.yml
+    .github/workflows/autotest.yml
 )

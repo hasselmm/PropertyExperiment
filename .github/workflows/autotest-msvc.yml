@@ -1,0 +1,26 @@
+name: Build and Test with MSVC
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  autotest:
+    strategy:
+      fail-fast: false
+
+      matrix:
+        platform:   [windows-latest]
+        compiler:   [cl]
+        qt_version: [6.2.4, 6.5.3, 6.6.1]
+
+    uses: ./.github/workflows/autotest.yml
+    with:
+      compiler:       ${{matrix.compiler_command || matrix.compiler}}
+      homebrew_path:  ${{matrix.homebrew_path}}
+      msys2_arch:     ${{matrix.msys2_arch}}
+      msys2_system:   ${{matrix.msys2_system}}
+      platform:       ${{matrix.platform}}
+      qt_version:     ${{matrix.qt_version}}
