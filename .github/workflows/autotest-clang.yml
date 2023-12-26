@@ -1,0 +1,75 @@
+name: Build and Test with Clang
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  autotest:
+    strategy:
+      fail-fast: false
+
+      matrix:
+        platform:   [macos-latest, ubuntu-latest, windows-latest]
+        compiler:   [clang++-14, clang++-15, clang++-16, clang++-17]
+        qt_version: [6.2.4, 6.5.3, 6.6.1, msys2]
+
+        include:
+        - platform:         macos-latest
+          compiler:         clang++-14
+          compiler_command: clang++
+          qt_version:       6.2.4         # Apple's pre-installed Clang cannot parse its own <concepts> header
+
+        - platform:         macos-latest
+          compiler:         clang++-15
+          compiler_command: clang++
+          homebrew_path:    $(brew --prefix llvm@15)/bin
+
+        - platform:         windows-latest
+          compiler:         clang++-16
+          compiler_command: clang++
+
+        - platform:         windows-latest
+          compiler:         clang++-17
+          compiler_command: clang++
+          msys2_system:     clang64
+          msys2_arch:       clang-x86_64
+          qt_version:       msys2
+
+        exclude:
+        - qt_version: msys2               # Available for Windows only, skip for all others
+
+        - platform: macos-latest          # Cannot parse its own <concepts> header
+          compiler: clang++-14
+        - platform: macos-latest          # Not pre-installed on this runner
+          compiler: clang++-16
+        - platform: macos-latest          # Not pre-installed on this runner
+          compiler: clang++-17
+
+        - platform: ubuntu-latest         # Cannot parse its own <chrono> header
+          compiler: clang++-14
+        - platform: ubuntu-latest         # Not pre-installed on this runner
+          compiler: clang++-16
+        - platform: ubuntu-latest         # Not pre-installed on this runner
+          compiler: clang++-17
+
+        - platform: windows-latest        # Not pre-installed on this runner
+          compiler: clang++-14
+        - platform: windows-latest        # Not pre-installed on this runner
+          compiler: clang++-15
+        - platform: windows-latest        # Qt 6.2.4 passes MSVC switches to Clang
+          compiler: clang++-16
+          qt_version: 6.2.4
+        - platform: windows-latest        # Test with MSYS2 version of Qt only
+          compiler: clang++-17
+
+    uses: ./.github/workflows/autotest.yml
+    with:
+      compiler:       ${{matrix.compiler_command || matrix.compiler}}
+      homebrew_path:  ${{matrix.homebrew_path}}
+      msys2_arch:     ${{matrix.msys2_arch}}
+      msys2_system:   ${{matrix.msys2_system}}
+      platform:       ${{matrix.platform}}
+      qt_version:     ${{matrix.qt_version}}

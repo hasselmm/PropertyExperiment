@@ -1,0 +1,166 @@
+name: Build and Test using CMake
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        type:        string
+        required:    true
+
+      compiler:
+        type:        string
+        required:    true
+
+      qt_version:
+        type:        string
+        required:    true
+        description: "For a list of available Qt versions see https://ddalcino.github.io/aqt-list-server/"
+
+      msys2_system:
+        type:        string
+        required:    true
+
+      msys2_arch:
+        type:        string
+        required:    true
+
+      homebrew_path:
+        type:        string
+        required:    true
+
+jobs:
+  autotest:
+    runs-on: ${{inputs.platform}}
+
+    steps:
+    - name: "Show inputs"
+      shell: bash
+      run: echo '${{toJSON(inputs)}}'
+
+    - name: "Checkout project"
+      uses: actions/checkout@v3
+
+    - name: "Install Qt using aqtinstall"
+      uses: jurplel/install-qt-action@v3.3.0
+      if:   ${{!inputs.msys2_system}}
+      with:
+        version: ${{inputs.qt_version}}
+        tools: "tools_ninja"
+        cache: true
+
+    - name: "Install Qt using MSYS2"
+      uses: msys2/setup-msys2@v2
+      if:   ${{inputs.msys2_system}}
+      with:
+        update: true
+        location: D:\
+        install: >-
+          mingw-w64-${{inputs.msys2_arch}}-clang
+          mingw-w64-${{inputs.msys2_arch}}-cmake
+          mingw-w64-${{inputs.msys2_arch}}-libc++
+          mingw-w64-${{inputs.msys2_arch}}-libunwind
+          mingw-w64-${{inputs.msys2_arch}}-ninja
+          mingw-w64-${{inputs.msys2_arch}}-qt6-base-debug
+          mingw-w64-${{inputs.msys2_arch}}-qt6-base
+
+    - name: Setup environment
+      shell: bash
+      id: strings
+      run: |
+        add_path() {
+          if [ -n "$1" ]; then
+            echo "${2:-$1}" >> $GITHUB_PATH
+          fi
+        }
+
+        add_path "${{inputs.homebrew_path}}"
+        add_path "${{inputs.msys2_system}}" "D:\MSYS64\${{inputs.msys2_system}}\bin"
+        add_path "${IQTA_TOOLS}" "${IQTA_TOOLS}/Ninja"
+
+        echo GITHUB_PATH
+        cat $GITHUB_PATH
+
+        if [ -n "${{inputs.msys2_system}}" ]; then
+          echo "MSYSTEM=${{inputs.msys2_system}}" >> $GITHUB_ENV
+
+          echo GITHUB_ENV
+          cat $GITHUB_ENV
+        fi
+
+        echo "build-output-dir=${{github.workspace}}/build" >> $GITHUB_OUTPUT
+
+        echo GITHUB_OUTPUT
+        cat $GITHUB_OUTPUT
+
+    - name: Check tools
+      if:   ${{inputs.compiler != 'cl'}}
+      run: |
+        echo "PATH is: '${{inputs.patform == 'windows-latest' && '$env:PATH' || '$PATH'}}'"
+
+        echo "Ninja:"
+        ninja --version
+
+        echo "CMake:"
+        cmake --version
+
+        echo "Compiler:"
+        ${{inputs.compiler}} --version
+
+    - name: Configure using CMake
+      run: >
+        cmake
+        --loglevel=VERBOSE
+        ${{inputs.compiler != 'cl' && '-G "Ninja Multi-Config"' || ''}}
+        -S "${{github.workspace}}"
+        -B "${{steps.strings.outputs.build-output-dir}}"
+        -D "CMAKE_CONFIGURATION_TYPES:LIST=Debug;MinSizeRel;RelWithDebInfo"
+        -D "CMAKE_CXX_COMPILER:STRING=${{inputs.compiler}}"
+        -D "CMAKE_CXX_COMPILER_WORKS:BOOL=YES"
+
+
+    - name: Build Debug
+      if:   ${{!inputs.msys2_system}}
+      run:  cmake --build "${{steps.strings.outputs.build-output-dir}}" --config Debug
+
+    - name: Build MinSizeRel
+      if:   ${{!inputs.msys2_system}}
+      run:  cmake --build "${{steps.strings.outputs.build-output-dir}}" --config MinSizeRel
+
+    - name: Build RelWithDebInfo
+      if:   ${{!inputs.msys2_system}}
+      run:  cmake --build "${{steps.strings.outputs.build-output-dir}}" --config RelWithDebInfo
+
+
+    - name:  Build Debug using MSYS2
+      if:    ${{inputs.msys2_system}}
+      shell: msys2 {0}
+      run: >
+        PATH=/${{inputs.msys2_system}}/bin
+        cmake --build "${{steps.strings.outputs.build-output-dir}}" --config Debug
+
+    - name:  Build MinSizeRel using MSYS2
+      if:    ${{inputs.msys2_system}}
+      shell: msys2 {0}
+      run: >
+        PATH=/${{inputs.msys2_system}}/bin
+        cmake --build "${{steps.strings.outputs.build-output-dir}}" --config MinSizeRel
+
+    - name:  Build RelWithDebInfo using MSYS2
+      if:    ${{inputs.msys2_system}}
+      shell: msys2 {0}
+      run: >
+        PATH=/${{inputs.msys2_system}}/bin
+        cmake --build "${{steps.strings.outputs.build-output-dir}}" --config RelWithDebInfo
+
+
+    - name: Test Debug
+      working-directory: ${{steps.strings.outputs.build-output-dir}}
+      run: ctest --rerun-failed --output-on-failure --build-config Debug
+
+    - name: Test MinSizeRel
+      working-directory: ${{steps.strings.outputs.build-output-dir}}
+      run: ctest --rerun-failed --output-on-failure --build-config MinSizeRel
+
+    - name: Test RelWithDebInfo
+      working-directory: ${{steps.strings.outputs.build-output-dir}}
+      run: ctest --rerun-failed --output-on-failure --build-config RelWithDebInfo

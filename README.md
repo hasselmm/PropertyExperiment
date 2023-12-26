@@ -33,7 +33,9 @@ public:
 
 The code works, and I am pretty happy with the syntax of `MyObject`.
 
-[![Build and Test with Clang/GCC/MSVC](https://github.com/hasselmm/PropertyExperiment/actions/workflows/cmake-build.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/cmake-build.yml)
+[![Build and Test with Clang](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-clang.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-clang.yml)
+[![Build and Test with GCC](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-gcc.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/cmake-autotest-gccl)
+[![Build and Test with MSVC](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-msvc.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-msvc.yml)
 
 Actually the `Setter` and the `Signal` fields in this class are just
 syntactical sugar to preserve the API we got used to over the years.

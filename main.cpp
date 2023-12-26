@@ -70,6 +70,7 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
         TestFunction(object); \
     })>()
 
+
 /// Simply show an expression and its value.
 ///
 #define SHOW(What) qInfo() << #What " =>" << (What)
@@ -82,6 +83,7 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
 #define QCOMPARE_LT(Left, Right) QVERIFY((Left) < (Right))
 #define QCOMPARE_GE(Left, Right) QVERIFY((Left) >= (Right))
 #endif
+
 
 /// Some constants for property related tests
 ///
@@ -596,20 +598,22 @@ private:
     /// Some support functions to provide same test environment for all property systems.
     /// --------------------------------------------------------------------------------------------
 
+    using TestFunction = void (*)();
+    using TestFunctionPointer = void *;
+
     void runTestFunction()
     {
-        const QFETCH(TestFunction, testFunction);
+        const QFETCH(TestFunctionPointer, testFunctionPointer);
+        const auto testFunction = reinterpret_cast<TestFunction>(testFunctionPointer);
         testFunction();
     }
-
-    using TestFunction = void (*)();
 
     template<class Delegate>
     void makeTestData()
     {
-        QTest::addColumn<TestFunction>  ("testFunction");
-        QTest::addColumn<QByteArray>    ("expectedClassName");
-        QTest::addColumn<QByteArray>    ("expectedSuperClassName");
+        QTest::addColumn<TestFunctionPointer>("testFunctionPointer");
+        QTest::addColumn<QByteArray>         ("expectedClassName");
+        QTest::addColumn<QByteArray>         ("expectedSuperClassName");
 
         makeTestRow<Delegate, aproperty::AObject>("aproperty",
                                                   "aproperty::AObject");
@@ -625,14 +629,19 @@ private:
                      QByteArray  className,
                      QByteArray  superName = "QObject")
     {
-        const auto function = [] {
-            auto object = T{};
-            Delegate{}(object);
-        };
+        // GCC fails to wrap template function pointers by QVariant on
+        // Qt 6.2 for MacOS. Actually I am suprised that this worked at all.
+        // So let's just erase the function type to make live easier for GCC.
+        const auto testFunction = &PropertyExperiment::testFunction<Delegate, T>;
+        const auto pointer = reinterpret_cast<TestFunctionPointer>(testFunction);
+        QTest::newRow(tag) << pointer << className << superName;
+    }
 
-        QTest::newRow(tag)
-            << static_cast<TestFunction>(function)
-            << className << superName;
+    template<class Delegate, class T>
+    static void testFunction()
+    {
+        auto object = T{};
+        Delegate{}(object);
     }
 };
 

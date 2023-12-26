@@ -22,12 +22,12 @@ if (CCACHE_EXECUTABLE)
 endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Test)
+message(STATUS "Using Qt ${Qt6_VERSION}")
 
 # https://releases.llvm.org/17.0.1/tools/clang/docs/DiagnosticsReference.html
 # https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Warning-Options.html
 codepoetry_add_compile_options(
     -Werror=all
-    -Werror=arith-conversion
     -Werror=comment
     -Werror=conversion
     -Werror=extra
@@ -51,6 +51,19 @@ codepoetry_add_compile_options(
     -Werror=invalid-constexpr
     CLANG_MINIMUM_VERSION 15
     GNU_MINIMUM_VERSION 13
+)
+
+codepoetry_add_compile_options(
+    -Werror=arith-conversion
+    GNU
+)
+
+# Clang is wrong about this: C++ 20 allows empty variadic argument lists
+# for macros: https://eel.is/c++draft/cpp.replace.general#5
+# https://github.com/llvm/llvm-project/issues/76375
+codepoetry_add_compile_options(
+    -Wno-gnu-zero-variadic-macro-arguments
+    CLANG
 )
 
 # https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options
@@ -98,5 +111,8 @@ add_custom_target(
 
 add_custom_target(
     GitHub SOURCES
-    .github/workflows/cmake-build.yml
+    .github/workflows/autotest-clang.yml
+    .github/workflows/autotest-gcc.yml
+    .github/workflows/autotest-msvc.yml
+    .github/workflows/autotest.yml
 )
