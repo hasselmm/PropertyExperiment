@@ -501,12 +501,16 @@ private:
 
         QVERIFY(metaObject.d.data);
 
-        const auto offset            = metaObject.methodOffset();
-        const auto notifyingChanged  = metaObject.method(offset + 0);
-        const auto writableChanged   = metaObject.method(offset + 1);
+        const auto notifyingChanged = QMetaMethod::fromSignal(&T::notifyingChanged);
+        const auto writableChanged  = QMetaMethod::fromSignal(&T::writableChanged);
 
-        QCOMPARE(QMetaMethod::fromSignal(&T::notifyingChanged), notifyingChanged);
-        QCOMPARE(QMetaMethod::fromSignal(&T::writableChanged),   writableChanged);
+        QVERIFY (notifyingChanged.isValid());
+        QCOMPARE(notifyingChanged.name(),                   "notifyingChanged");
+        QCOMPARE(notifyingChanged.methodIndex(), metaObject.methodOffset() + 0);
+
+        QVERIFY (writableChanged.isValid());
+        QCOMPARE(writableChanged.name(),                    "writableChanged");
+        QCOMPARE(writableChanged.methodIndex(), metaObject.methodOffset() + 1);
 
         auto notifyingSpy = QSignalSpy{&object, &T::notifyingChanged};
         auto writableSpy  = QSignalSpy{&object, &T::writableChanged};

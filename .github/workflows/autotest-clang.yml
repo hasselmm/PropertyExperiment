@@ -18,11 +18,6 @@ jobs:
 
         include:
         - platform:         macos-latest
-          compiler:         clang++-14
-          compiler_command: clang++
-          qt_version:       6.2.4         # Apple's pre-installed Clang cannot parse its own <concepts> header
-
-        - platform:         macos-latest
           compiler:         clang++-15
           compiler_command: clang++
           homebrew_path:    $(brew --prefix llvm@15)/bin
@@ -41,8 +36,8 @@ jobs:
         exclude:
         - qt_version: msys2               # Available for Windows only, skip for all others
 
-        - platform: macos-latest          # Cannot parse its own <concepts> header
-          compiler: clang++-14
+        - platform: macos-latest          # The pre-installed Clang is just slightly too old to support
+          compiler: clang++-14            # proper C++ 20. Let's revisit later, now it's too much work.
         - platform: macos-latest          # Not pre-installed on this runner
           compiler: clang++-16
         - platform: macos-latest          # Not pre-installed on this runner
