@@ -68,7 +68,7 @@ codepoetry_add_compile_options(
 
 # https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options
 codepoetry_add_compile_options(
-    /W4 /permissive- /utf-8
+    /W3 /permissive- /utf-8
     MSVC)
 
 add_executable(
