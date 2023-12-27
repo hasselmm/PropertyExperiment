@@ -2,8 +2,7 @@
 #define NPROPERTY_NMETAOBJECT_H
 
 #include "nmetaobject_p.h"
-
-#include <source_location>
+#include "nlinenumber_p.h"
 
 namespace nproperty {
 
@@ -90,14 +89,7 @@ protected:
 
     template <std::size_t N>
     static consteval detail::Name<N> name(const char (&name)[N],
-                                          std::source_location source =
-                                          std::source_location::current())
-    {
-        return detail::Name{name, std::move(source).line()};
-    }
-
-    template <std::size_t N>
-    static consteval detail::Name<N> name(quintptr index, const char (&name)[N])
+                                          quintptr index = detail::LineNumber::current())
     {
         return detail::Name{name, index};
     }

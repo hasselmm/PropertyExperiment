@@ -87,9 +87,11 @@ add_executable(
     mobject/mobjecttest.h
     mobject/mproperty.cpp
     mobject/mproperty.h
+    nobject/nlinenumber.cpp
+    nobject/nlinenumber_p.h
     nobject/nmetaobject.cpp
-    nobject/nmetaobject_p.h
     nobject/nmetaobject.h
+    nobject/nmetaobject_p.h
     nobject/nobjecttest.cpp
     nobject/nobjecttest.h
     nobject/nproperty.cpp

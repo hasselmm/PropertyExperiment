@@ -58,12 +58,14 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 /// Property<QString, name("legacy", __LINE__)> legacy;
 /// ```
 ///
+/// FIXME: consider wording for `detail::LineNumber::current()`
+///
 #define N_PROPERTY(Type, Name, ...)                                             \
     static consteval bool hasMember(detail::Tag<__LINE__>) { return true; }     \
     static consteval detail::MemberInfo member(detail::Tag<__LINE__>)           \
     { constexpr auto property = &decltype(Name)::ObjectType::Name;              \
       return detail::MemberInfo::make<decltype(Name), property>(); }            \
-    Property<Type, name(#Name), ##__VA_ARGS__> Name
+    Property<Type, name(#Name, __LINE__), ##__VA_ARGS__> Name
 
 
 /// Theses flags describe various capabilites of a property.

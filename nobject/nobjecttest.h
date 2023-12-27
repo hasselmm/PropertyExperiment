@@ -111,9 +111,9 @@ public:
         notifying = u"I have been changed per method"_qs;
     }
 
-    Property<QString, name(__LINE__, "constant")>          constant  = u"I am constant"_qs;
-    Property<QString, name(__LINE__, "notifying"), Notify> notifying = u"I am observing"_qs;
-    Property<QString, name(__LINE__, "writable"),  Write>  writable  = u"I am modifiable"_qs;
+    Property<QString, name("constant", __LINE__)>          constant  = u"I am constant"_qs;
+    Property<QString, name("notifying", __LINE__), Notify> notifying = u"I am observing"_qs;
+    Property<QString, name("writable", __LINE__),  Write>  writable  = u"I am modifiable"_qs;
 };
 
 } // namespace nproperty
