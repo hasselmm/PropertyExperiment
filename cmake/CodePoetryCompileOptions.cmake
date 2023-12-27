@@ -1,12 +1,11 @@
 # FIXME support other languages than C++
-# FIXME add support for add_compile_definitions(), add_link_options()
 # FIXME add support for target_compile_definitions(), target_compile_definitions(), target_link_options()
 # NOTE  the canonical approach would be generator expressions, but they are impossible to read,
 #       and even worse they tend to fail with additional tools, like clang_tidy
 
 include(CodePoetryNormalizeVersion)
 
-function(codepoetry_add_compile_options)
+function(codepoetry_check_compiler_flags RESULT_VARIABLE OPTIONS_VARIABLE)
     set(enabled FALSE)
     set(options CLANG GNU MSVC)
     set(onevalue
@@ -66,12 +65,39 @@ function(codepoetry_add_compile_options)
         list(PREPEND acceptance "${CMAKE_CXX_COMPILER_ID}")
     endif()
 
-    if (acceptance)
-        message(VERBOSE "Adding compile options for ${acceptance}: ${OPTIONS_UNPARSED_ARGUMENTS}")
-        add_compile_options(${OPTIONS_UNPARSED_ARGUMENTS})
+    set("${RESULT_VARIABLE}" "${acceptance}" PARENT_SCOPE)
+    set("${OPTIONS_VARIABLE}" "${OPTIONS_UNPARSED_ARGUMENTS}" PARENT_SCOPE)
+endfunction()
+
+function(codepoetry_add_compile_options)
+    codepoetry_check_compiler_flags(accepted options ${ARGV})
+
+    if (accepted)
+        message(VERBOSE "Adding compile options for ${accepted}: ${options}")
+        add_compile_options(${options})
     else()
-        message(
-            VERBOSE "Ignoring compiler options for ${CMAKE_CXX_COMPILER_ID} "
-            "${CMAKE_CXX_COMPILER_VERSION}: ${OPTIONS_UNPARSED_ARGUMENTS}")
+        message(VERBOSE "Ignoring compile options for ${CMAKE_CXX_COMPILER_ID}: ${options}")
+    endif()
+endfunction()
+
+function(codepoetry_add_compile_definitions)
+    codepoetry_check_compiler_flags(accepted options ${ARGV})
+
+    if (accepted)
+        message(VERBOSE "Adding compile definitions for ${accepted}: ${options}")
+        add_compile_definitions(${options})
+    else()
+        message(VERBOSE "Ignoring compile options for ${CMAKE_CXX_COMPILER_ID}: ${options}")
+    endif()
+endfunction()
+
+function(codepoetry_add_link_options)
+    codepoetry_check_compiler_flags(accepted options ${ARGV})
+
+    if (accepted)
+        message(VERBOSE "Adding link options for ${accepted}: ${options}")
+        add_link_options(${options})
+    else()
+        message(VERBOSE "Ignoring link options for ${CMAKE_CXX_COMPILER_ID}: ${options}")
     endif()
 endfunction()
