@@ -71,7 +71,7 @@ You can reach me via _mathias_ plus github at _taschenorakel_ in _de_.
 * [aobject.h](aobject.h), [aobject.cpp](aobject.cpp) —
   An initial, but abdoned attempt of an C++ 20 implementation.
 
-## Implemenatation
+## Implementation
 
 * [mproperty.h](mproperty.h) —
   The implementation of the C++ 20 moc replacement used by 
