@@ -230,10 +230,18 @@ private slots:
 
         using nproperty::detail::Prototype;
 
-        QCOMPARE(Prototype::get<nproperty::HelloWorld>(),
-                 Prototype::get<nproperty::HelloWorld>());
-        QCOMPARE(Prototype::get(&nproperty::HelloWorld::hello),
-                 Prototype::get(&nproperty::HelloWorld::hello));
+        // The objects returned by Prototype::get() are uninitialized, unconstructed data.
+        // The test will randomly crash when QCOMPARE() doesn't try to read metaObject(),
+        // and the like.
+
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get<nproperty::HelloWorld>()),
+                 reinterpret_cast<quintptr>(Prototype::get<nproperty::HelloWorld>()));
+
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get<nproperty::HelloWorld>()),
+                 reinterpret_cast<quintptr>(Prototype::get<nproperty::NObjectMacro>()));
+
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::hello)),
+                 reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::hello)));
 
         QVERIFY(reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::hello))
                 != reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::world)));
