@@ -62,15 +62,17 @@ codepoetry_add_compile_options(
 # Clang is wrong about this: C++ 20 allows empty variadic argument lists
 # for macros: https://eel.is/c++draft/cpp.replace.general#5
 # https://github.com/llvm/llvm-project/issues/76375
-codepoetry_add_compile_options(
-    -Wno-gnu-zero-variadic-macro-arguments
-    CLANG
-)
+codepoetry_add_compile_options(CLANG -Wno-gnu-zero-variadic-macro-arguments)
 
+# Clang better uses libc++ for proper ranges support.
+# For Clang 15 one also has to opt-in for experimental features.
+codepoetry_add_compile_options(CLANG_EXACT_VERSION   15 -fexperimental-library)
+codepoetry_add_compile_options(CLANG_MAXIMUM_VERSION 15 -stdlib=libc++)
+codepoetry_add_link_options   (CLANG_MAXIMUM_VERSION 15 -stdlib=libc++)
+
+# Compiler options for Microsoft Visual C++
 # https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options
-codepoetry_add_compile_options(
-    /W3 /permissive- /utf-8
-    MSVC)
+codepoetry_add_compile_options(MSVC /W3 /permissive- /utf-8)
 
 add_executable(
     PropertyExperiment

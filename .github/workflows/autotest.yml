@@ -63,6 +63,11 @@ jobs:
           mingw-w64-${{inputs.msys2_arch}}-qt6-base-debug
           mingw-w64-${{inputs.msys2_arch}}-qt6-base
 
+    - name: "Install libc++"
+      if:   ${{inputs.platform == 'ubuntu-latest' && inputs.compiler == 'clang++-15'}}
+      shell: bash
+      run:   sudo apt install libc++-15-dev libc++abi-15-dev
+
     - name: Setup environment
       shell: bash
       id: strings
