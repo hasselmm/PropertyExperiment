@@ -27,6 +27,7 @@ message(STATUS "Using Qt ${Qt6_VERSION}")
 # https://releases.llvm.org/17.0.1/tools/clang/docs/DiagnosticsReference.html
 # https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Warning-Options.html
 codepoetry_add_compile_options(
+    -fstack-protector
     -Werror=all
     -Werror=comment
     -Werror=conversion
