@@ -30,14 +30,31 @@ private:                                                                        
     friend MetaObject;                                                          \
     friend Object;
 
-
 /// This macro just defines the static metaobject of this class. This cannot
 /// be done in the `N_OBJECT` macro, as C++ only allows initialization of static
 /// members in the class definition, if these members are constexpr. Such is
 /// not possible as the static meta object must be an instance of QMetaObject.
 ///
-#define N_OBJECT_IMPLEMENTATION(ClassName)                                      \
+#define N_OBJECT_IMPLEMENTATION(ClassName) \
 const ClassName::MetaObject ClassName::staticMetaObject = {};
+
+
+// FIXME: doxs
+#define N_REGISTER_PROPERTY_AT_LINE(PropertyName, LineNumber) \
+    static consteval auto member(detail::Tag<LineNumber>) \
+    { return detail::MemberInfo::make<&decltype(PropertyName)::ObjectType::PropertyName>(); }
+
+#define N_REGISTER_PROPERTY(PropertyName) \
+    N_REGISTER_PROPERTY_AT_LINE(PropertyName, decltype(PropertyName)::index())
+
+#define N_PROPERTY_NOTIFICATION(PropertyName) \
+    static constexpr Signal<&decltype(PropertyName)::ObjectType::PropertyName> \
+    PropertyName ## Changed = {};
+
+#define N_PROPERTY_SETTER(SetterName, PropertyName) \
+    void SetterName(decltype(PropertyName)::ValueType newValue) \
+    { PropertyName.setValue(std::move(newValue)); }
+
 
 /// This macro provides convenience and pretty syntax when adding new properties
 /// to a NObject.
@@ -60,9 +77,8 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 ///
 /// FIXME: consider wording for `detail::LineNumber::current()`
 ///
-#define N_PROPERTY(Type, Name, ...)                                             \
-    static consteval auto member(detail::Tag<__LINE__>)                         \
-    { return detail::MemberInfo::make<&decltype(Name)::ObjectType::Name>(); }   \
+#define N_PROPERTY(Type, Name, ...) \
+    N_REGISTER_PROPERTY_AT_LINE(Name, __LINE__) \
     Property<Type, name(#Name, __LINE__), ##__VA_ARGS__> Name
 
 

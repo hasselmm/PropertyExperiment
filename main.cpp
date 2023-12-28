@@ -59,25 +59,8 @@ template<> constexpr auto implementedFeatures<sproperty::SObject>
       & ~NotifyPointers         // properties do not have their own objects with moc
     ;
 
-template<> constexpr uint skippedFeatures<nproperty::NObjectModern>
-    = skippedFeatures<>
-      | MetaObject
-      | PropertyDefinitions
-      | UniquePropertyIds
-      | PropertyAddresses
-      | MethodDefinitions
-      | SignalAddresses
-      | PropertyChanges
-      | PropertyNotifications
-      | NotifyPointers
-    ;
-
 template<> constexpr uint skippedFeatures<nproperty::NObjectLegacy>
     = skippedFeatures<>
-      | MetaObject
-      | PropertyDefinitions
-      | UniquePropertyIds
-      | PropertyAddresses
       | MethodDefinitions
       | SignalAddresses
       | PropertyChanges
