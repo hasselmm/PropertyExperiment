@@ -24,10 +24,9 @@ public:                                                                         
                                                                                 \
 private:                                                                        \
     template <quintptr N>                                                       \
-    static consteval bool hasMember(detail::Tag<N>) { return false; }           \
-    template <quintptr N>                                                       \
     static consteval detail::MemberInfo member(detail::Tag<N>) { return {}; }   \
     static consteval quintptr lineOffset() { return __LINE__; }                 \
+    friend detail::MetaObjectData;                                              \
     friend MetaObject;                                                          \
     friend Object;
 
@@ -62,10 +61,8 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 /// FIXME: consider wording for `detail::LineNumber::current()`
 ///
 #define N_PROPERTY(Type, Name, ...)                                             \
-    static consteval bool hasMember(detail::Tag<__LINE__>) { return true; }     \
-    static consteval detail::MemberInfo member(detail::Tag<__LINE__>)           \
-    { constexpr auto property = &decltype(Name)::ObjectType::Name;              \
-      return detail::MemberInfo::make<decltype(Name), property>(); }            \
+    static consteval auto member(detail::Tag<__LINE__>)                         \
+    { return detail::MemberInfo::make<&decltype(Name)::ObjectType::Name>(); }   \
     Property<Type, name(#Name, __LINE__), ##__VA_ARGS__> Name
 
 

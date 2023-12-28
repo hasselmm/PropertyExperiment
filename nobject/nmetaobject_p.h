@@ -33,20 +33,6 @@ struct MemberInfo
 
     consteval MemberInfo() noexcept = default;
 
-    template<class Property, auto Member>
-    static consteval MemberInfo make()
-    {
-        const auto selector = static_cast<const Property *>(nullptr);
-        using Object = typename Property::ObjectType;
-
-        const auto resolveOffset = [] {
-            return reinterpret_cast<quintptr>(Prototype::get(Member))
-                   - reinterpret_cast<quintptr>(Prototype::get<Object>());
-        };
-
-        return MemberInfo{selector, resolveOffset};
-    }
-
     template <class Object, typename Value, auto Name, FeatureSet Features>
     consteval MemberInfo(const Property<Object, Value, Name, Features> *,
                          OffsetFunction resolveOffset) noexcept
@@ -76,6 +62,20 @@ struct MemberInfo
             return *reinterpret_cast<const void *const *>(&proxy);
         }}
     {}
+
+    template<auto Property>
+    static consteval MemberInfo make() noexcept
+    {
+        using Object = typename DataMemberType<Property>::ObjectType;
+
+        const auto resolveOffset = [] {
+            return reinterpret_cast<quintptr>(Prototype::get(Property))
+                   - reinterpret_cast<quintptr>(Prototype::get<Object>());
+        };
+
+        const auto selector = Prototype::null(Property);
+        return MemberInfo{selector, resolveOffset};
+    }
 
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
 
@@ -115,6 +115,12 @@ public:
 protected:
     void emplace(MemberInfo &&member);
     void metaCall(QObject *object, QMetaObject::Call call, int offset, void **args) const;
+
+    template<class Object, quintptr N>
+    static consteval bool hasMember()
+    {
+        return std::is_same_v<MemberInfo, decltype(Object::member(Tag<N>{}))>;
+    }
 
 private:
     [[nodiscard]] const MemberInfo *propertyInfo(std::size_t offset) const noexcept;

@@ -55,9 +55,8 @@ private:
     static void registerMember(MetaObject *data)
     {
         // the constexpr is essential here to avoid generating huge amount of code
-        if constexpr (constexpr auto currentLine = detail::Tag<Index>{};
-                      ObjectType::hasMember(currentLine))
-            data->emplace(ObjectType::member(currentLine));
+        if constexpr (hasMember<ObjectType, Index>())
+            data->emplace(ObjectType::member(detail::Tag<Index>{}));
     }
 
     static void staticMetaCall(QObject *object, QMetaObject::Call call, int offset, void **args)
