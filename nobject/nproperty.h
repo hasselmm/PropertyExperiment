@@ -131,6 +131,7 @@ class Property
 public:
     using ObjectType = Object;
     using  ValueType = Value;
+    using    TagType = detail::Tag<Name.index>;
 
     friend ObjectType;
 
@@ -139,8 +140,9 @@ public:
         : m_value{std::move(value)}
     {}
 
+    [[nodiscard]] static constexpr TagType tag() noexcept               { return {}; }
     [[nodiscard]] static constexpr quintptr index() noexcept            { return Name.index; }
-    [[nodiscard]] static constexpr const char *name() noexcept          { return Name.value; }
+    [[nodiscard]] static constexpr const char *name() noexcept;
 
     [[nodiscard]] static constexpr FeatureSet features() noexcept       { return canonical(Features); }
     [[nodiscard]] static constexpr bool hasFeature(Feature f) noexcept  { return features().contains(f); }

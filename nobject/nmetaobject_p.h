@@ -163,4 +163,11 @@ private:
 
 } // namespace nproperty::detail
 
+// FIXME: move definition of Property::name() to proper place
+template <class Object, typename Value, auto Name, nproperty::FeatureSet Features>
+constexpr const char *nproperty::Property<Object, Value, Name, Features>::name() noexcept
+{
+    return Object::template member(tag()).name.value;
+}
+
 #endif // NPROPERTY_NMETAOBJECT_P_H
