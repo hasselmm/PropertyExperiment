@@ -88,15 +88,15 @@ void MetaObjectData::metaCall(QObject           *object,
 {
     switch (call) {
     case QMetaObject::ReadProperty:
-        readProperty(object, static_cast<std::size_t>(offset), args[0]);
+        readProperty(object, static_cast<MemberOffset>(offset), args[0]);
         return;
 
     case QMetaObject::WriteProperty:
-        writeProperty(object, static_cast<std::size_t>(offset), args[0]);
+        writeProperty(object, static_cast<MemberOffset>(offset), args[0]);
         return;
 
     case QMetaObject::ResetProperty:
-        resetProperty(object, static_cast<std::size_t>(offset));
+        resetProperty(object, static_cast<MemberOffset>(offset));
         return;
 
     case QMetaObject::IndexOfMethod:
@@ -116,7 +116,7 @@ void MetaObjectData::metaCall(QObject           *object,
               static_cast<const void *>(args));
 }
 
-const MemberInfo *MetaObjectData::propertyInfo(std::size_t offset) const noexcept
+const MemberInfo *MetaObjectData::propertyInfo(MemberOffset offset) const noexcept
 {
     if (Q_UNLIKELY(offset >= m_propertyOffsets.size()))
         return nullptr;
@@ -129,7 +129,7 @@ const MemberInfo *MetaObjectData::propertyInfo(std::size_t offset) const noexcep
     return property;
 }
 
-const MemberInfo *MetaObjectData::memberInfo(std::size_t offset) const noexcept
+const MemberInfo *MetaObjectData::memberInfo(MemberOffset offset) const noexcept
 {
     if (Q_UNLIKELY(offset >= m_members.size()))
         return nullptr;
@@ -178,7 +178,7 @@ int MetaObjectData::metaMethodIndexForLabel(LabelId label) const noexcept
                            label);
 }
 
-void MetaObjectData::readProperty(const QObject *object, std::size_t offset, void *result) const
+void MetaObjectData::readProperty(const QObject *object, MemberOffset offset, void *result) const
 {
     if (const auto member = propertyInfo(offset);
         Q_LIKELY(member && member->readProperty)) {
@@ -189,7 +189,7 @@ void MetaObjectData::readProperty(const QObject *object, std::size_t offset, voi
     }
 }
 
-void MetaObjectData::writeProperty(QObject *object, std::size_t offset, void *value) const
+void MetaObjectData::writeProperty(QObject *object, MemberOffset offset, void *value) const
 {
     if (const auto member = propertyInfo(offset);
         Q_LIKELY(member && member->writeProperty)) {
@@ -200,7 +200,7 @@ void MetaObjectData::writeProperty(QObject *object, std::size_t offset, void *va
     }
 }
 
-void MetaObjectData::resetProperty(QObject *object, std::size_t offset) const
+void MetaObjectData::resetProperty(QObject *object, MemberOffset offset) const
 {
     if (const auto member = propertyInfo(offset);
         Q_UNLIKELY(member && member->resetProperty)) {

@@ -114,23 +114,25 @@ protected:
     }
 
 private:
-    [[nodiscard]] const MemberInfo *propertyInfo(std::size_t offset) const noexcept;
-    [[nodiscard]] const MemberInfo *memberInfo  (std::size_t offset) const noexcept;
+    using MemberTable  = std::vector<MemberInfo>;
+    using MemberOffset = MemberTable::size_type;
+
+    [[nodiscard]] const MemberInfo *propertyInfo(MemberOffset offset) const noexcept;
+    [[nodiscard]] const MemberInfo *memberInfo  (MemberOffset offset) const noexcept;
 
     [[nodiscard]] std::function<const MemberInfo *(quintptr)> makeOffsetToSignal() const noexcept;
     [[nodiscard]] int metaMethodForPointer(const void *pointer) const noexcept;
 
-    void readProperty(const QObject *object, std::size_t offset, void *result) const;
-    void writeProperty(QObject *object, std::size_t offset, void *value) const;
-    void resetProperty(QObject *object, std::size_t offset) const;
+    void readProperty(const QObject *object, MemberOffset offset, void *result) const;
+    void writeProperty(QObject *object, MemberOffset offset, void *value) const;
+    void resetProperty(QObject *object, MemberOffset offset) const;
     void indexOfMethod(int *result, void *pointer) const noexcept;
 
 private:
-    std::vector<MemberInfo>  m_members;
+    MemberTable m_members;
 
-    // these are offsets within `m_members`
-    std::vector<std::size_t> m_propertyOffsets;
-    std::vector<std::size_t> m_signalOffsets;
+    std::vector<MemberOffset> m_propertyOffsets;
+    std::vector<MemberOffset> m_signalOffsets;
 };
 
 /// Builds a QMetaObject from our static introspection information.
