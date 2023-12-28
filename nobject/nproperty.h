@@ -45,7 +45,7 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
     { return detail::MemberInfo::make<&decltype(PropertyName)::ObjectType::PropertyName>(); }
 
 #define N_REGISTER_PROPERTY(PropertyName) \
-    N_REGISTER_PROPERTY_AT_LINE(PropertyName, decltype(PropertyName)::index())
+    N_REGISTER_PROPERTY_AT_LINE(PropertyName, decltype(PropertyName)::label())
 
 #define N_PROPERTY_NOTIFICATION(PropertyName) \
     static constexpr Signal<&decltype(PropertyName)::ObjectType::PropertyName> \
@@ -131,7 +131,7 @@ class Property
 public:
     using ObjectType = Object;
     using  ValueType = Value;
-    using    TagType = detail::Tag<Name.index>;
+    using    TagType = detail::Tag<Name.label>;
 
     friend ObjectType;
 
@@ -141,7 +141,7 @@ public:
     {}
 
     [[nodiscard]] static constexpr TagType tag() noexcept               { return {}; }
-    [[nodiscard]] static constexpr quintptr index() noexcept            { return Name.index; }
+    [[nodiscard]] static constexpr quintptr label() noexcept            { return Name.label; }
     [[nodiscard]] static constexpr const char *name() noexcept;
 
     [[nodiscard]] static constexpr FeatureSet features() noexcept       { return canonical(Features); }

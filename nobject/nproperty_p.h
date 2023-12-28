@@ -18,13 +18,13 @@ struct Tag {};
 ///
 template <std::size_t N>
 struct Name {
-    consteval Name(const char (&str)[N], quintptr index)
-        : index{index}
+    consteval Name(const char (&str)[N], quintptr label)
+        : label{label}
     {
         std::copy_n(str, N, value);
     }
 
-    quintptr index;
+    quintptr label;
     char     value[N];
 };
 

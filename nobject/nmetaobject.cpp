@@ -46,15 +46,15 @@ int indexOf(auto &&range, const auto &value)
 
 } // namespace ranges
 
-quintptr memberToNameIndex(const MemberInfo &member)
+quintptr memberToNameLabel(const MemberInfo &member)
 {
-    return member.name.index;
+    return member.name.label;
 }
 
-quintptr memberPointerToNameIndex(const MemberInfo *member)
+quintptr memberPointerToNameLabel(const MemberInfo *member)
 {
     Q_ASSERT(member != nullptr);
-    return member->name.index;
+    return member->name.label;
 }
 
 const void *memberToPointer(const MemberInfo *member)
@@ -139,7 +139,7 @@ const MemberInfo *MetaObjectData::memberInfo(std::size_t offset) const noexcept
 
 quintptr MetaObjectData::memberOffset(quintptr nameIndex) const noexcept
 {
-    if (const auto it = ranges::find(m_members, nameIndex, memberToNameIndex);
+    if (const auto it = ranges::find(m_members, nameIndex, memberToNameLabel);
         Q_LIKELY(it != m_members.cend())) {
         Q_ASSERT(it->resolveOffset);
         return it->resolveOffset();
@@ -174,7 +174,7 @@ int MetaObjectData::metaMethodForName(quintptr nameIndex) const noexcept
 {
     return ranges::indexOf(m_signalOffsets
                                | std::views::transform(makeOffsetToSignal())
-                               | std::views::transform(memberPointerToNameIndex),
+                               | std::views::transform(memberPointerToNameLabel),
                            nameIndex);
 }
 

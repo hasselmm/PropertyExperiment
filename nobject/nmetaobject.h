@@ -30,7 +30,7 @@ private:
     {
         static const auto s_metaObject = [](MetaObject *data) {
             constexpr auto lineCount = std::max(sizeof(ObjectType), MaximumLineCount);
-            constexpr auto lines = std::make_integer_sequence<quintptr, lineCount>();
+            constexpr auto lines = std::make_integer_sequence<LabelId, lineCount>();
             registerMembers<ObjectType::lineOffset()>(data, lines);
 
             return detail::MetaObjectBuilder::build(QMetaType::fromType<ObjectType>(),
@@ -42,21 +42,21 @@ private:
         return s_metaObject;
     }
 
-    template<quintptr... Indices>
-    using LineNumberSequence = std::integer_sequence<quintptr, Indices...>;
+    template<LabelId... Indices>
+    using LabelSequence = std::integer_sequence<LabelId, Indices...>;
 
-    template<quintptr Offset, quintptr... Is>
-    static void registerMembers(MetaObject *data, const LineNumberSequence<Is...> &)
+    template<quintptr Offset, LabelId... Labels>
+    static void registerMembers(MetaObject *data, const LabelSequence<Labels...> &)
     {
-        (registerMember<Offset + Is>(data), ...);
+        (registerMember<Offset + Labels>(data), ...);
     }
 
-    template<quintptr Index>
+    template<LabelId Label>
     static void registerMember(MetaObject *data)
     {
         // the constexpr is essential here to avoid generating huge amount of code
-        if constexpr (hasMember<ObjectType, Index>())
-            data->emplace(ObjectType::member(detail::Tag<Index>{}));
+        if constexpr (hasMember<ObjectType, Label>())
+            data->emplace(ObjectType::member(detail::Tag<Label>{}));
     }
 
     static void staticMetaCall(QObject *object, QMetaObject::Call call, int offset, void **args)
@@ -89,9 +89,9 @@ protected:
 
     template <std::size_t N>
     static consteval detail::Name<N> name(const char (&name)[N],
-                                          quintptr index = detail::LineNumber::current())
+                                          quintptr label = detail::LineNumber::current())
     {
-        return detail::Name{name, index};
+        return detail::Name{name, label};
     }
 
     template<typename Value, auto Name>

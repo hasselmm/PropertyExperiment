@@ -165,8 +165,8 @@ private slots:
         auto object     = nproperty::HelloWorld{};
         auto metaObject = object.staticMetaObject;
 
-        SHOW(object.hello.index());
-        SHOW(object.world.index());
+        SHOW(object.hello.label());
+        SHOW(object.world.label());
 
         SHOW(object.hello.name());
         SHOW(object.world.name());
@@ -180,8 +180,8 @@ private slots:
         SHOW(object.hello);
         SHOW(object.world);
 
-        const auto indices = QSet{object.hello.index(),
-                                  object.world.index()};
+        const auto indices = QSet{object.hello.label(),
+                                  object.world.label()};
 
         QCOMPARE(indices.count(), 2);
 
@@ -354,9 +354,9 @@ private:
         static_assert(std::is_unsigned_v<decltype(object.constant.address())>);
         static_assert(std::is_unsigned_v<decltype(object.constant.offset())>);
 
-        const auto uniqueIds = QSet{object. constant.index(),
-                                    object.notifying.index(),
-                                    object. writable.index()};
+        const auto uniqueIds = QSet{object. constant.label(),
+                                    object.notifying.label(),
+                                    object. writable.label()};
 
         QCOMPARE(uniqueIds.size(), 3);
 

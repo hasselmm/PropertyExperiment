@@ -39,7 +39,7 @@ struct MemberInfo
         : type{Type::Property}
         , valueType{qMetaTypeId<Value>()}
         , features{Features}
-        , name{Name.index, Name.value}
+        , name{Name.label, Name.value}
         , resolveOffset{resolveOffset}
         , readProperty{[](const QObject *object, void *result) {
             const auto property = Property<Object, Value, Name, Features>::resolve(object);
@@ -80,7 +80,7 @@ struct MemberInfo
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
 
     struct Name {
-        quintptr    index           = 0;
+        quintptr    label           = 0;
         const char *value           = nullptr;
     };
 
@@ -106,11 +106,11 @@ public:
 
     template<std::size_t N>
     [[nodiscard]] quintptr memberOffset(const Name<N> &name) const noexcept
-    { return memberOffset(name.index); }
+    { return memberOffset(name.label); }
 
     template<std::size_t N>
     [[nodiscard]] int metaMethodForName(const Name<N> &name) const noexcept
-    { return metaMethodForName(name.index); }
+    { return metaMethodForName(name.label); }
 
 protected:
     void emplace(MemberInfo &&member);
