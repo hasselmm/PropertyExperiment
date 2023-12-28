@@ -40,12 +40,13 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 
 
 // FIXME: doxs
-#define N_REGISTER_PROPERTY_AT_LINE(PropertyName, LineNumber) \
-    static consteval auto member(detail::Tag<LineNumber>) \
-    { return detail::MemberInfo::make<&decltype(PropertyName)::ObjectType::PropertyName>(); }
+#define N_REGISTER_PROPERTY_WITH_LABEL(PropertyName, Label) \
+    static consteval auto member(detail::Tag<Label>) \
+    { using ObjectType = decltype(PropertyName)::ObjectType; \
+      return detail::MemberInfo::make<&ObjectType::PropertyName>(#PropertyName); }
 
 #define N_REGISTER_PROPERTY(PropertyName) \
-    N_REGISTER_PROPERTY_AT_LINE(PropertyName, decltype(PropertyName)::label())
+    N_REGISTER_PROPERTY_WITH_LABEL(PropertyName, decltype(PropertyName)::label())
 
 #define N_PROPERTY_NOTIFICATION(PropertyName) \
     static constexpr Signal<&decltype(PropertyName)::ObjectType::PropertyName> \
@@ -78,8 +79,8 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 /// FIXME: consider wording for `detail::LineNumber::current()`
 ///
 #define N_PROPERTY(Type, Name, ...) \
-    N_REGISTER_PROPERTY_AT_LINE(Name, __LINE__) \
-    Property<Type, name(#Name, __LINE__), ##__VA_ARGS__> Name
+    N_REGISTER_PROPERTY_WITH_LABEL(Name, __LINE__) \
+    Property<Type, __LINE__, ##__VA_ARGS__> Name
 
 
 /// Theses flags describe various capabilites of a property.
@@ -118,20 +119,24 @@ static constexpr FeatureSet canonical(FeatureSet features)
     return features;
 }
 
+/// A unique number identifying members within their object, usually just the line number.
+///
+using LabelId = quintptr;
+
 /// A QObject property that's fully defined in pure C++.
 ///
 /// Template arguments:
 /// * `Object` - the type of the QObject class to wich this property is added
 /// * `Value` - the actual value type of this property
-/// * `Name` - the unique name of this property
+/// * `Label` - the unique number identifying this property within its object
 ///
-template <class Object, typename Value, auto Name, FeatureSet Features = Feature::Read>
+template <class Object, typename Value, LabelId Label, FeatureSet Features = Feature::Read>
 class Property
 {
 public:
     using ObjectType = Object;
     using  ValueType = Value;
-    using    TagType = detail::Tag<Name.label>;
+    using    TagType = detail::Tag<Label>;
 
     friend ObjectType;
 
@@ -141,7 +146,7 @@ public:
     {}
 
     [[nodiscard]] static constexpr TagType tag() noexcept               { return {}; }
-    [[nodiscard]] static constexpr quintptr label() noexcept            { return Name.label; }
+    [[nodiscard]] static constexpr LabelId label() noexcept             { return Label; }
     [[nodiscard]] static constexpr const char *name() noexcept;
 
     [[nodiscard]] static constexpr FeatureSet features() noexcept       { return canonical(Features); }
@@ -192,7 +197,7 @@ public:
 
     [[nodiscard]] static constexpr quintptr offset() noexcept
     {
-        return ObjectType::staticMetaObject.memberOffset(Name);
+        return ObjectType::staticMetaObject.memberOffset(label());
     }
 
     [[nodiscard]] static constexpr const Property *resolve(const QObject *object) noexcept
@@ -224,23 +229,23 @@ private:
     ValueType m_value;
 };
 
-template <class Object, typename Value, auto Name, FeatureSet Features>
-inline void Property<Object, Value, Name, Features>::setValue(PublicValue newValue)
+template <class Object, typename Value, LabelId Label, FeatureSet Features>
+inline void Property<Object, Value, Label, Features>::setValue(PublicValue newValue)
 {
     static_assert(isWritable());
     static_assert(std::is_same_v<decltype(newValue), Value>);
     setValueImpl(std::move(newValue));
 }
 
-template <class Object, typename Value, auto Name, FeatureSet Features>
-inline void Property<Object, Value, Name, Features>::setValue(ProtectedValue newValue)
+template <class Object, typename Value, LabelId Label, FeatureSet Features>
+inline void Property<Object, Value, Label, Features>::setValue(ProtectedValue newValue)
 {
     static_assert(std::is_same_v<decltype(newValue), Value>);
     setValueImpl(std::move(newValue));
 }
 
-template <class Object, typename Value, auto Name, FeatureSet Features>
-inline void Property<Object, Value, Name, Features>::setValueImpl(Value &&newValue)
+template <class Object, typename Value, LabelId Label, FeatureSet Features>
+inline void Property<Object, Value, Label, Features>::setValueImpl(Value &&newValue)
 {
     if constexpr (isNotifiable()) {
         if (std::exchange(m_value, std::move(newValue)) != m_value)
@@ -250,8 +255,8 @@ inline void Property<Object, Value, Name, Features>::setValueImpl(Value &&newVal
     }
 }
 
-template <class Object, typename Value, auto Name, FeatureSet Features>
-inline void Property<Object, Value, Name, Features>::notify(Value newValue)
+template <class Object, typename Value, LabelId Label, FeatureSet Features>
+inline void Property<Object, Value, Label, Features>::notify(Value newValue)
 {
     static_assert(hasFeature(Notify));
     const auto target = object();

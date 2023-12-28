@@ -33,38 +33,40 @@ struct MemberInfo
 
     consteval MemberInfo() noexcept = default;
 
-    template <class Object, typename Value, auto Name, FeatureSet Features>
-    consteval MemberInfo(const Property<Object, Value, Name, Features> *,
-                         OffsetFunction resolveOffset) noexcept
+    template <class Object, typename Value, LabelId Label, FeatureSet Features>
+    consteval MemberInfo(const char *name,
+                         OffsetFunction resolveOffset,
+                         const Property<Object, Value, Label, Features> * = nullptr) noexcept
         : type{Type::Property}
         , valueType{qMetaTypeId<Value>()}
         , features{Features}
-        , name{Name.label, Name.value}
+        , label{Label}
+        , name{name}
         , resolveOffset{resolveOffset}
         , readProperty{[](const QObject *object, void *result) {
-            const auto property = Property<Object, Value, Name, Features>::resolve(object);
+            const auto property = Property<Object, Value, Label, Features>::resolve(object);
             *reinterpret_cast<Value *>(result) = property->value();
         }}
         , writeProperty{[](QObject *object, void *value) {
             if constexpr (canonical(Features).contains(Write)) {
-                const auto property = Property<Object, Value, Name, Features>::resolve(object);
+                const auto property = Property<Object, Value, Label, Features>::resolve(object);
                 property->setValue(*reinterpret_cast<Value *>(value));
             }
         }}
         , resetProperty{[](QObject *object) {
             if constexpr (canonical(Features).contains(Reset)) {
-                const auto property = Property<Object, Value, Name, Features>::resolve(object);
+                const auto property = Property<Object, Value, Label, Features>::resolve(object);
                 property->resetValue();
             }
         }}
         , pointer{[] {
-            const auto proxy = Object::template signalProxy<Value, Name, Features>();
+            const auto proxy = Object::template signalProxy<Value, Label, Features>();
             return *reinterpret_cast<const void *const *>(&proxy);
         }}
     {}
 
     template<auto Property>
-    static consteval MemberInfo make() noexcept
+    static consteval MemberInfo make(const char *name) noexcept
     {
         using Object = typename DataMemberType<Property>::ObjectType;
 
@@ -74,20 +76,16 @@ struct MemberInfo
         };
 
         const auto selector = Prototype::null(Property);
-        return MemberInfo{selector, resolveOffset};
+        return MemberInfo{name, resolveOffset, selector};
     }
 
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
 
-    struct Name {
-        quintptr    label           = 0;
-        const char *value           = nullptr;
-    };
-
     Type            type            = Type::Invalid;
     int             valueType       = QMetaType::UnknownType;
     FeatureSet      features;
-    Name            name;
+    LabelId         label;
+    const char     *name;
 
     OffsetFunction  resolveOffset   = nullptr;
     ReadFunction    readProperty    = nullptr;
@@ -101,16 +99,9 @@ struct MemberInfo
 class MetaObjectData
 {
 public:
-    [[nodiscard]] const std::vector<MemberInfo> &members() const noexcept
-    { return m_members; }
-
-    template<std::size_t N>
-    [[nodiscard]] quintptr memberOffset(const Name<N> &name) const noexcept
-    { return memberOffset(name.label); }
-
-    template<std::size_t N>
-    [[nodiscard]] int metaMethodForName(const Name<N> &name) const noexcept
-    { return metaMethodForName(name.label); }
+    [[nodiscard]] const auto &members() const noexcept { return m_members; }
+    [[nodiscard]] quintptr memberOffset(LabelId label) const noexcept;
+    [[nodiscard]] int metaMethodIndexForLabel(LabelId label) const noexcept;
 
 protected:
     void emplace(MemberInfo &&member);
@@ -126,10 +117,8 @@ private:
     [[nodiscard]] const MemberInfo *propertyInfo(std::size_t offset) const noexcept;
     [[nodiscard]] const MemberInfo *memberInfo  (std::size_t offset) const noexcept;
 
-    [[nodiscard]] quintptr memberOffset(quintptr nameIndex) const noexcept;
     [[nodiscard]] std::function<const MemberInfo *(quintptr)> makeOffsetToSignal() const noexcept;
     [[nodiscard]] int metaMethodForPointer(const void *pointer) const noexcept;
-    [[nodiscard]] int metaMethodForName(quintptr nameIndex) const noexcept;
 
     void readProperty(const QObject *object, std::size_t offset, void *result) const;
     void writeProperty(QObject *object, std::size_t offset, void *value) const;
@@ -163,11 +152,15 @@ private:
 
 } // namespace nproperty::detail
 
+namespace nproperty {
+
 // FIXME: move definition of Property::name() to proper place
-template <class Object, typename Value, auto Name, nproperty::FeatureSet Features>
-constexpr const char *nproperty::Property<Object, Value, Name, Features>::name() noexcept
+template <class Object, typename Value, LabelId Label, FeatureSet Features>
+constexpr const char *Property<Object, Value, Label, Features>::name() noexcept
 {
-    return Object::template member(tag()).name.value;
+    return Object::template member(tag()).name;
 }
+
+} // namespace nproperty
 
 #endif // NPROPERTY_NMETAOBJECT_P_H

@@ -87,30 +87,28 @@ protected:
     template <typename Value, auto Name, FeatureSet Features = Feature::Read>
     using Property = nproperty::Property<ObjectType, Value, Name, Features>;
 
-    template <std::size_t N>
-    static consteval detail::Name<N> name(const char (&name)[N],
-                                          quintptr label = detail::LineNumber::current())
-    {
-        return detail::Name{name, label};
-    }
+    /// Generate a unique `LabelId` form current line number.
+    static consteval LabelId l(LabelId l = detail::LineNumber::current()) noexcept { return l; }
 
-    template<typename Value, auto Name>
+    // The label is part of the method signature
+    // as we need unique method pointers for QObject::connect().
+    template<typename Value, LabelId Label>
     void activateSignal(Value value)
     {
-        auto metaCallArgs = std::array<void *, 2> { nullptr, &value };
+        const auto metaObject = &ObjectType::staticMetaObject;
+        const auto methodIndex = metaObject->metaMethodIndexForLabel(Label);
+              auto metaCallArgs = std::array<void *, 2> { nullptr, &value };
 
-        QMetaObject::activate(this, &ObjectType::staticMetaObject,
-                              ObjectType::staticMetaObject.metaMethodForName(Name),
-                              metaCallArgs.data());
+        QMetaObject::activate(this, metaObject, methodIndex, metaCallArgs.data());
     }
 
 public: // FIXME: make signalProxy() protected again
-    template<typename Value, auto Name, FeatureSet Features>
+    template<typename Value, LabelId Label, FeatureSet Features>
     static detail::MemberFunction<ObjectType, void, Value>
-    signalProxy(const Property<Value, Name, Features> * = nullptr)
+    signalProxy(const Property<Value, Label, Features> * = nullptr)
     {
         if (Q_LIKELY(canonical(Features).contains(Notify)))
-            return &ObjectType::template activateSignal<Value, Name>;
+            return &ObjectType::template activateSignal<Value, Label>;
 
         return nullptr;
     }

@@ -46,15 +46,15 @@ int indexOf(auto &&range, const auto &value)
 
 } // namespace ranges
 
-quintptr memberToNameLabel(const MemberInfo &member)
+LabelId memberToLabel(const MemberInfo &member)
 {
-    return member.name.label;
+    return member.label;
 }
 
-quintptr memberPointerToNameLabel(const MemberInfo *member)
+LabelId memberPointerToLabel(const MemberInfo *member)
 {
     Q_ASSERT(member != nullptr);
-    return member->name.label;
+    return member->label;
 }
 
 const void *memberToPointer(const MemberInfo *member)
@@ -137,9 +137,9 @@ const MemberInfo *MetaObjectData::memberInfo(std::size_t offset) const noexcept
     return &m_members[offset];
 }
 
-quintptr MetaObjectData::memberOffset(quintptr nameIndex) const noexcept
+quintptr MetaObjectData::memberOffset(LabelId label) const noexcept
 {
-    if (const auto it = ranges::find(m_members, nameIndex, memberToNameLabel);
+    if (const auto it = ranges::find(m_members, label, memberToLabel);
         Q_LIKELY(it != m_members.cend())) {
         Q_ASSERT(it->resolveOffset);
         return it->resolveOffset();
@@ -170,12 +170,12 @@ int MetaObjectData::metaMethodForPointer(const void *pointer) const noexcept
                            pointer);
 }
 
-int MetaObjectData::metaMethodForName(quintptr nameIndex) const noexcept
+int MetaObjectData::metaMethodIndexForLabel(LabelId label) const noexcept
 {
     return ranges::indexOf(m_signalOffsets
                                | std::views::transform(makeOffsetToSignal())
-                               | std::views::transform(memberPointerToNameLabel),
-                           nameIndex);
+                               | std::views::transform(memberPointerToLabel),
+                           label);
 }
 
 void MetaObjectData::readProperty(const QObject *object, std::size_t offset, void *result) const
@@ -252,7 +252,8 @@ void MetaObjectBuilder::makeProperty(QMetaObjectBuilder &metaObject,
 {
     const auto features = canonical(property.features);
     const auto type     = QMetaType{property.valueType};
-    auto metaProperty   = metaObject.addProperty(property.name.value, type.name(), type);
+
+    auto metaProperty   = metaObject.addProperty(property.name, type.name(), type);
 
     metaProperty.setReadable  (features & Feature::Read);
     metaProperty.setWritable  (features & Feature::Write);

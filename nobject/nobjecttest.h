@@ -75,9 +75,9 @@ public:
         notifying = u"I have been changed per method"_qs;
     }
 
-    Property<QString, name("constant")>          constant  = u"I am constant"_qs;
-    Property<QString, name("notifying"), Notify> notifying = u"I am observing"_qs;
-    Property<QString, name("writable"),  Write>  writable  = u"I am modifiable"_qs;
+    Property<QString, l()>          constant = u"I am constant"_qs;
+    Property<QString, l(), Notify> notifying = u"I am observing"_qs;
+    Property<QString, l(),  Write>  writable = u"I am modifiable"_qs;
 
     static constexpr Signal<&NObjectModern::notifying> notifyingChanged = {};
     static constexpr Signal<&NObjectModern::writable>  writableChanged  = {};
@@ -90,7 +90,7 @@ private:
     N_REGISTER_PROPERTY(writable);
 };
 
-/// This class implements an NObject based QObject using C++ 20.
+/// This class implements an NObject based QObject using more traditional C++
 //
 class NObjectLegacy
     : public Object<NObjectLegacy, NObjectBase>
@@ -105,9 +105,9 @@ public:
         notifying = u"I have been changed per method"_qs;
     }
 
-    Property<QString, name("constant", __LINE__)>          constant  = u"I am constant"_qs;
-    Property<QString, name("notifying", __LINE__), Notify> notifying = u"I am observing"_qs;
-    Property<QString, name("writable", __LINE__),  Write>  writable  = u"I am modifiable"_qs;
+    Property<QString, __LINE__>          constant = u"I am constant"_qs;
+    Property<QString, __LINE__, Notify> notifying = u"I am observing"_qs;
+    Property<QString, __LINE__,  Write>  writable = u"I am modifiable"_qs;
 
 private:
     N_REGISTER_PROPERTY(constant);

@@ -3,8 +3,6 @@
 
 #include <QtGlobal>
 
-#include <algorithm>
-
 namespace nproperty::detail {
 
 /// A tagging type that's use to generate individual functions for various
@@ -12,21 +10,6 @@ namespace nproperty::detail {
 ///
 template <quintptr N>
 struct Tag {};
-
-/// A symbol name that's available at compile time,
-/// and most importantly as template argument.
-///
-template <std::size_t N>
-struct Name {
-    consteval Name(const char (&str)[N], quintptr label)
-        : label{label}
-    {
-        std::copy_n(str, N, value);
-    }
-
-    quintptr label;
-    char     value[N];
-};
 
 /// QFlags<T> clone that can be used as template argument:
 /// In difference to QFlags<T> this type is structural.
