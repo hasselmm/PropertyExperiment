@@ -1,5 +1,5 @@
-#ifndef APROPERTY_H
-#define APROPERTY_H
+#ifndef APROPERTY_APROPERTY_H
+#define APROPERTY_APROPERTY_H
 
 #include <utility>
 
@@ -115,4 +115,4 @@ private:
 
 } // namespace aproperty
 
-#endif // APROPERTY_H
+#endif // APROPERTY_APROPERTY_H

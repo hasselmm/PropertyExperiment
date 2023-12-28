@@ -2,8 +2,10 @@
 
 namespace mproperty {
 
+using mpropertytest::MObjectTest;
+
 template<>
-std::vector<MObject::MetaProperty> MObject::MetaObject::makeProperties()
+std::vector<MObjectTest::MetaProperty> MObjectTest::MetaObject::makeProperties()
 {
     return {
         {"constant",    &null()->constant},     // FIXME: with some additional effort
@@ -12,8 +14,10 @@ std::vector<MObject::MetaProperty> MObject::MetaObject::makeProperties()
     };
 }
 
-M_OBJECT_IMPLEMENTATION(MObject, constant, notifying, writable)
-
 } // namespace mproperty
+
+namespace mpropertytest {
+M_OBJECT_IMPLEMENTATION(MObjectTest, constant, notifying, writable)
+} // namespace mpropertytest
 
 #include "moc_mobjecttest.cpp"

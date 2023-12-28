@@ -1,11 +1,11 @@
-#ifndef SPROPERTY_SOBJECT_H
-#define SPROPERTY_SOBJECT_H
+#ifndef SPROPERTY_SOBJECTTEST_H
+#define SPROPERTY_SOBJECTTEST_H
 
 #include <QObject>
 
-namespace sproperty {
+namespace spropertytest {
 
-class SObject : public QObject
+class SObjectTest : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString constant READ constant CONSTANT FINAL)
@@ -33,6 +33,6 @@ private:
     QString m_writable  = u"I am modifiable"_qs;
 };
 
-} // namespace sproperty
+} // namespace spropertytest
 
-#endif // SPROPERTY_SOBJECT_H
+#endif // SPROPERTY_SOBJECTTEST_H
