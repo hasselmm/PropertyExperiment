@@ -4,6 +4,7 @@ add_library(
     aobjecttest.h
     aproperty.cpp
     aproperty.h
+    README.md
 )
 
 target_link_libraries(

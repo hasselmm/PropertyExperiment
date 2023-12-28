@@ -12,6 +12,7 @@ add_library(
     nproperty_p.h
     ntypetraits.cpp
     ntypetraits.h
+    README.md
 )
 
 target_link_libraries(

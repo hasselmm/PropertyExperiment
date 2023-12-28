@@ -40,15 +40,23 @@ private:                                                                        
 const ClassName::MetaObject ClassName::staticMetaObject = {};
 
 
-// FIXME: doxs
+/// Register a property for introspection.
+/// This is mainly for special cases. You might prefer N_PROPERTY().
+///
 #define N_REGISTER_PROPERTY(PropertyName) \
     static consteval auto member(::nproperty::detail::Tag<__LINE__>) \
     { return makeMember<&TargetType::PropertyName>(#PropertyName); }
 
+/// Defines a class member for connecting to property notifications using
+/// traditional syntax: `connect(object, &Object::propertyChanged, ...);`
+///
 #define N_PROPERTY_NOTIFICATION(PropertyName) \
     static constexpr ::nproperty::Signal<&TargetType::PropertyName, \
                                           TargetType> PropertyName ## Changed = {};
 
+/// Defines a class member for chaging properties using traditional syntax:
+/// `object.setProperty(newValue);`
+///
 #define N_PROPERTY_SETTER(SetterName, PropertyName) \
     void SetterName(decltype(TargetType::PropertyName)::ValueType newValue) \
     { PropertyName.setValue(std::move(newValue)); }

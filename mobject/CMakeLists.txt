@@ -4,6 +4,7 @@ add_library(
     mobjecttest.h
     mproperty.cpp
     mproperty.h
+    README.md
 )
 
 target_link_libraries(

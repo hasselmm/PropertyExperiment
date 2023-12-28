@@ -1,5 +1,7 @@
 # Property Experiment
 
+## Motivation
+
 This is a tiny experiment to see if C++ 20 can do QObject properties without moc.
 This experiment was inspired by André Pölnitz' e-mail[^1] to the Qt Development
 list: "I haven't tried yet, but I have the gut feeling that one should be able
@@ -8,51 +10,34 @@ to get away with..."
 Well, yes: André was right. C++ 20 can almost replace moc these days:
 
 ``` C++
-class MyObject : public Object<MyObject, QObject>
+class NObjectTest : public nproperty::Object<NObjectTest>
 {
-    M_OBJECT
+    N_OBJECT
 
 public:
     using Object::Object;
 
     void modifyNotifying()
     {
-        notifying = u"I have been changed per method"_s;
+        notifying = u"I have been changed per method"_qs;
     }
 
-    Property<n(), QString>          constant = u"I am constant"_s;
-    Property<n(), QString, Notify> notifying = u"I am observing"_s;
-    Property<n(), QString,  Write>  writable = u"I am modifiable"_s;
+    N_PROPERTY(QString, constant)          = u"I am constant"_qs;
+    N_PROPERTY(QString, notifying, Notify) = u"I am observing"_qs;
+    N_PROPERTY(QString, writable,  Write)  = u"I am modifiable"_qs;
 
-    Setter<QString> setWritable = &writable;
+    N_PROPERTY_NOTIFICATION(notifying)
+    N_PROPERTY_NOTIFICATION(writable)
 
-    static constexpr Signal<&MObject::notifying> notifyingChanged = {};
-    static constexpr Signal<&MObject::writable> writableChanged = {};
+    N_PROPERTY_SETTER(setWritable, writable)
 };
 ```
 
-The code works, and I am pretty happy with the syntax of `MyObject`.
+The code works, and I am pretty happy with the syntax of `NObject`.
 
 [![Build and Test with Clang](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-clang.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-clang.yml)
 [![Build and Test with GCC](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-gcc.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/cmake-autotest-gccl)
 [![Build and Test with MSVC](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-msvc.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-msvc.yml)
-
-Actually the `Setter` and the `Signal` fields in this class are just
-syntactical sugar to preserve the API we got used to over the years.
-You can fully omit them, and still get functional properties and signal:
-
-``` C++
-    // properties support simple assignment
-    object.property = "new value";
-    qInfo() << object.property;
-
-    // alternatively there also are setter and getter methods
-    object.property.set("new value");
-    qInfo() << object.property.get();
-
-    // connecting to connect to a signal without Signal<> field
-    connect(object, notifyMethod(&Object::property), ...);
-```
 
 > [!IMPORTANT]
 > Still this is just an experiment, a _proof of concept_. Many FIXMEs,
@@ -61,38 +46,32 @@ You can fully omit them, and still get functional properties and signal:
 
 You can reach me via _mathias_ plus github at _taschenorakel_ in _de_.
 
-## Examples
+## The Various Experiments
 
-* [sobject.h](sobject.h), [sobject.cpp](sobject.cpp) —
-  Standard implementation of a QObject with properties, as we are doing 
-  it for decades now.
-* [mobject.h](mobject.h), [mobject.cpp](mobject.cpp) -
-  C++ 20 implementation of a QObject, similar to the one listed above.
-* [aobject.h](aobject.h), [aobject.cpp](aobject.cpp) —
-  An initial, but abdoned attempt of an C++ 20 implementation.
+More detailed documentation of the several experiments
+can be found in their subfolders:
 
-## Implementation
+* The initial, but abdoned [AObject Experiment](aobject/README.md)
+  can be found in the [aobject folder](aobject).
+* A much better attempt was the [MObject Experiment](mobject/README.md).
+  It already allowed to fully define `QMetaObject` properties without
+  the help of moc, but it was ugly. It can be found in the
+  [mobject folder](mobject).
+* The [NObject Experiment](nobject/README.md) in the [nobject folder](nobject)
+  is my current favorite. Its usage is pretty similiar to the example above.
+  By the number of files in this folder one could argue the experiment got
+  out of control by now. Still I am planing to add the missing `QMetaObject`
+  features beyond simple properties. Actually it seems like mechanisms behind
+  work well enough that I could try to create a plain C++ version without
+  any help from Qt. That would mean full `QMetaObject` reflection with plain
+  C++. Wouldn't that be pretty cool?
+* The [SObject Experiment](sobject/README.md) in the [sobject folder](sobject)
+  is just the plain old standard mechanism we are using with Qt for decades now.
 
-* [mproperty.h](mproperty.h) —
-  The implementation of the C++ 20 moc replacement used by 
-  [mobject.h](mobject.h).
-  > This is just a proof of concept. Many shortcuts, simplifications, 
-  > sharp corners and edges. Goal was to proof the concept, not to 
-  > provide a production ready implementation.
-* [mproperty.cpp](mproperty.cpp) —
-  This file simply shall proof that [mproperty.h](mproperty.h) 
-  is self-contained.
-* [aproperty.h](aproperty.h), [aproperty.cpp](aproperty.cpp) —
-  Obsolete, abdoned implementation, just for curiosity.
+## Main Program
 
-## Tests
-
-* [main.cpp](main.cpp) —
-  The main program just is a QTest fixture verifying the implementation.
-
-## License
-
-The code is offered under the terms of the [MIT License](LICENSE).
+* The [main program](main.cpp) just is a QTest fixture to verifying
+  the implementations. It contains a few pretty nice template tricks.
 
 ## Compiling, Building
 
@@ -105,5 +84,11 @@ export Qt6_DIR=/path/to/your/qt6/lib/cmake/Qt6
 cmake ..
 cmake --build .
 ```
+
+## License
+
+The code is offered under the terms of the [MIT License](LICENSE).
+
+---
 
 [^1]: https://lists.qt-project.org/pipermail/development/2023-December/044807.html
