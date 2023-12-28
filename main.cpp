@@ -48,13 +48,15 @@ template<> constexpr auto implementedFeatures<aproperty::AObject>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
       & ~PropertyAddresses      // properties do not have their own objects with moc
-      & ~NotifyPointers;        // properties do not have their own objects with moc
+      & ~NotifyPointers         // properties do not have their own objects with moc
+    ;
 
 template<> constexpr auto implementedFeatures<sproperty::SObject>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
       & ~PropertyAddresses      // properties do not have their own objects with moc
-      & ~NotifyPointers;        // properties do not have their own objects with moc
+      & ~NotifyPointers         // properties do not have their own objects with moc
+    ;
 
 /// Just a tiny wrapper with simple name for the pretty verbose
 /// `!std::is_member_function_pointer_v<decltype(&T::member)>`.
