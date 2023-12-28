@@ -1,6 +1,6 @@
 #include "nobjecttest.h"
 
-namespace nproperty {
+namespace npropertytest {
 
 N_OBJECT_IMPLEMENTATION(HelloWorld)
 N_OBJECT_IMPLEMENTATION(NObjectMacro)
@@ -10,22 +10,22 @@ N_OBJECT_IMPLEMENTATION(NObjectLegacy)
 // Check if the defined properties have the expected features.
 
 template <auto Property>
-constexpr auto features = detail::DataMemberType<Property>::features();
+constexpr auto features = nproperty::detail::DataMemberType<Property>::features();
 
-static_assert( features<&NObjectMacro::notifying>.contains(Feature::Read));
-static_assert( features<&NObjectMacro::writable> .contains(Feature::Read));
+static_assert( features<&NObjectMacro::notifying>.contains(Read));
+static_assert( features<&NObjectMacro::writable> .contains(Read));
 
-static_assert(!features<&NObjectMacro::constant> .contains(Feature::Notify));
-static_assert( features<&NObjectMacro::notifying>.contains(Feature::Notify));
-static_assert( features<&NObjectMacro::writable> .contains(Feature::Notify));
+static_assert(!features<&NObjectMacro::constant> .contains(Notify));
+static_assert( features<&NObjectMacro::notifying>.contains(Notify));
+static_assert( features<&NObjectMacro::writable> .contains(Notify));
 
-static_assert(!features<&NObjectMacro::constant> .contains(Feature::Write));
-static_assert(!features<&NObjectMacro::notifying>.contains(Feature::Write));
-static_assert( features<&NObjectMacro::writable> .contains(Feature::Write));
+static_assert(!features<&NObjectMacro::constant> .contains(Write));
+static_assert(!features<&NObjectMacro::notifying>.contains(Write));
+static_assert( features<&NObjectMacro::writable> .contains(Write));
 
-static_assert(!features<&NObjectMacro::constant> .contains(Feature::Reset));
-static_assert(!features<&NObjectMacro::notifying>.contains(Feature::Reset));
-static_assert(!features<&NObjectMacro::writable> .contains(Feature::Reset));
+static_assert(!features<&NObjectMacro::constant> .contains(Reset));
+static_assert(!features<&NObjectMacro::notifying>.contains(Reset));
+static_assert(!features<&NObjectMacro::writable> .contains(Reset));
 
 // Check that setValue() and operator= are protected for readonly properties
 
@@ -45,4 +45,4 @@ static_assert( AssignmentPermitted<&HelloWorld::world>);
 static_assert(!SetValuePermitted<&HelloWorld::hello>);
 static_assert( SetValuePermitted<&HelloWorld::world>);
 
-} // namespace nproperty
+} // namespace npropertytest

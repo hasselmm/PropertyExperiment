@@ -7,12 +7,17 @@
 #include <QObject>
 #include <QString>
 
-namespace nproperty {
+// This namespace is purposefully distinct from "nproperty".
+// This helps to ensure that the definitions are self-contained,
+// and that the macros fully quality their types.
+namespace npropertytest {
+
+using enum nproperty::Feature;
 
 /// A very basic example demonstrating the concept of NObject
 ///
 class HelloWorld
-    : public Object<HelloWorld>
+    : public nproperty::Object<HelloWorld>
 {
     N_OBJECT
 
@@ -38,7 +43,7 @@ public:
 /// This class implements an NObject based QObject using macros.
 ///
 class NObjectMacro
-    : public Object<NObjectMacro, NObjectBase>
+    : public nproperty::Object<NObjectMacro, NObjectBase>
 {
     N_OBJECT
 
@@ -63,7 +68,7 @@ public:
 /// This class implements an NObject based QObject using C++ 20.
 ///
 class NObjectModern
-    : public Object<NObjectModern, NObjectBase>
+    : public nproperty::Object<NObjectModern, NObjectBase>
 {
     N_OBJECT
 
@@ -79,8 +84,8 @@ public:
     Property<QString, l(), Notify> notifying = u"I am observing"_qs;
     Property<QString, l(),  Write>  writable = u"I am modifiable"_qs;
 
-    static constexpr Signal<&NObjectModern::notifying> notifyingChanged = {};
-    static constexpr Signal<&NObjectModern::writable>  writableChanged  = {};
+    static constexpr nproperty::Signal<&NObjectModern::notifying> notifyingChanged = {};
+    static constexpr nproperty::Signal<&NObjectModern::writable>  writableChanged  = {};
 
     void setWritable(QString newValue) { writable.setValue(std::move(newValue)); }
 
@@ -93,7 +98,7 @@ private:
 /// This class implements an NObject based QObject using more traditional C++
 //
 class NObjectLegacy
-    : public Object<NObjectLegacy, NObjectBase>
+    : public nproperty::Object<NObjectLegacy, NObjectBase>
 {
     N_OBJECT
 
@@ -115,6 +120,6 @@ private:
     N_REGISTER_PROPERTY(writable);
 };
 
-} // namespace nproperty
+} // namespace npropertytest
 
 #endif // NPROPERTY_NOBJECTTEST_H

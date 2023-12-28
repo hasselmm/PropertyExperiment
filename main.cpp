@@ -59,7 +59,7 @@ template<> constexpr auto implementedFeatures<sproperty::SObject>
       & ~NotifyPointers         // properties do not have their own objects with moc
     ;
 
-template<> constexpr uint skippedFeatures<nproperty::NObjectLegacy>
+template<> constexpr uint skippedFeatures<npropertytest::NObjectLegacy>
     = skippedFeatures<>
       | MethodDefinitions
       | SignalAddresses
@@ -162,7 +162,7 @@ private slots:
 
     void testNObject()
     {
-        auto object     = nproperty::HelloWorld{};
+        auto object     = npropertytest::HelloWorld{};
         auto metaObject = object.staticMetaObject;
 
         SHOW(object.hello.label());
@@ -210,17 +210,17 @@ private slots:
         // The test will randomly crash when QCOMPARE() doesn't try to read metaObject(),
         // and the like.
 
-        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get<nproperty::HelloWorld>()),
-                 reinterpret_cast<quintptr>(Prototype::get<nproperty::HelloWorld>()));
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get<npropertytest::HelloWorld>()),
+                 reinterpret_cast<quintptr>(Prototype::get<npropertytest::HelloWorld>()));
 
-        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get<nproperty::HelloWorld>()),
-                 reinterpret_cast<quintptr>(Prototype::get<nproperty::NObjectMacro>()));
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get<npropertytest::HelloWorld>()),
+                 reinterpret_cast<quintptr>(Prototype::get<npropertytest::NObjectMacro>()));
 
-        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::hello)),
-                 reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::hello)));
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get(&npropertytest::HelloWorld::hello)),
+                 reinterpret_cast<quintptr>(Prototype::get(&npropertytest::HelloWorld::hello)));
 
-        QVERIFY(reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::hello))
-                != reinterpret_cast<quintptr>(Prototype::get(&nproperty::HelloWorld::world)));
+        QVERIFY(reinterpret_cast<quintptr>(Prototype::get(&npropertytest::HelloWorld::hello))
+             != reinterpret_cast<quintptr>(Prototype::get(&npropertytest::HelloWorld::world)));
     }
 
 private:
@@ -694,22 +694,25 @@ private:
         QTest::addColumn<QByteArray>         ("expectedClassName");
         QTest::addColumn<QByteArray>         ("expectedSuperClassName");
 
-        makeTestRow<Delegate, aproperty::AObject>      ("aproperty",
-                                                        "aproperty::AObject");
-        makeTestRow<Delegate, mproperty::MObject>      ("mproperty",
-                                                        "mproperty::MObject",
-                                                        "mproperty::MObjectBase");
-        makeTestRow<Delegate, nproperty::NObjectMacro> ("nproperty:macro",
-                                                        "nproperty::NObjectMacro",
-                                                        "nproperty::NObjectBase");
-        makeTestRow<Delegate, nproperty::NObjectModern>("nproperty:modern",
-                                                        "nproperty::NObjectModern",
-                                                        "nproperty::NObjectBase");
-        makeTestRow<Delegate, nproperty::NObjectLegacy>("nproperty:legacy",
-                                                        "nproperty::NObjectLegacy",
-                                                        "nproperty::NObjectBase");
-        makeTestRow<Delegate, sproperty::SObject>      ("sproperty",
-                                                        "sproperty::SObject");
+        makeTestRow<Delegate, aproperty::AObject>("aproperty",
+                                                  "aproperty::AObject");
+        makeTestRow<Delegate, mproperty::MObject>("mproperty",
+                                                  "mproperty::MObject",
+                                                  "mproperty::MObjectBase");
+        makeTestRow<Delegate, sproperty::SObject>("sproperty",
+                                                  "sproperty::SObject");
+
+        using namespace npropertytest;
+
+        makeTestRow<Delegate, NObjectMacro> ("nproperty:macro",
+                                            "npropertytest::NObjectMacro",
+                                            "npropertytest::NObjectBase");
+        makeTestRow<Delegate, NObjectModern>("nproperty:modern",
+                                             "npropertytest::NObjectModern",
+                                             "npropertytest::NObjectBase");
+        makeTestRow<Delegate, NObjectLegacy>("nproperty:legacy",
+                                             "npropertytest::NObjectLegacy",
+                                             "npropertytest::NObjectBase");
     }
 
     template<typename Delegate, class T>

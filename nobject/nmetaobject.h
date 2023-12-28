@@ -113,7 +113,7 @@ public: // FIXME: make signalProxy() protected again
     static detail::MemberFunction<ObjectType, void, Value>
     signalProxy(const Property<Value, Label, Features> * = nullptr)
     {
-        if (Q_LIKELY(canonical(Features).contains(Notify)))
+        if (Q_LIKELY(canonical(Features).contains(Feature::Notify)))
             return &ObjectType::template activateSignal<Value, Label>;
 
         return nullptr;

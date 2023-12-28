@@ -48,13 +48,13 @@ struct MemberInfo
             *reinterpret_cast<Value *>(result) = property->value();
         }}
         , writeProperty{[](QObject *object, void *value) {
-            if constexpr (canonical(Features).contains(Write)) {
+            if constexpr (canonical(Features).contains(Feature::Write)) {
                 const auto property = Property<Object, Value, Label, Features>::resolve(object);
                 property->setValue(*reinterpret_cast<Value *>(value));
             }
         }}
         , resetProperty{[](QObject *object) {
-            if constexpr (canonical(Features).contains(Reset)) {
+            if constexpr (canonical(Features).contains(Feature::Reset)) {
                 const auto property = Property<Object, Value, Label, Features>::resolve(object);
                 property->resetValue();
             }

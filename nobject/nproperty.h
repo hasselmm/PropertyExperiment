@@ -24,9 +24,10 @@ public:                                                                         
                                                                                 \
 private:                                                                        \
     template <quintptr N>                                                       \
-    static consteval detail::MemberInfo member(detail::Tag<N>) { return {}; }   \
+    static consteval ::nproperty::detail::MemberInfo                            \
+    member(::nproperty::detail::Tag<N>) { return {}; }                          \
     static consteval quintptr lineOffset() { return __LINE__; }                 \
-    friend detail::MetaObjectData;                                              \
+    friend ::nproperty::detail::MetaObjectData;                                 \
     friend MetaObject;                                                          \
     friend Object;
 
@@ -45,7 +46,7 @@ static consteval auto member(::nproperty::detail::Tag<__LINE__>) \
     { return makeMember<&decltype(PropertyName)::ObjectType::PropertyName>(#PropertyName); }
 
 #define N_PROPERTY_NOTIFICATION(PropertyName) \
-    static constexpr Signal<&decltype(PropertyName)::ObjectType::PropertyName> \
+    static constexpr ::nproperty::Signal<&decltype(PropertyName)::ObjectType::PropertyName> \
     PropertyName ## Changed = {};
 
 #define N_PROPERTY_SETTER(SetterName, PropertyName) \
@@ -88,11 +89,6 @@ enum class Feature
     Notify  = (1 << 2),
     Write   = (1 << 3),
 };
-
-/// This gives the members of the Feature class a shorter optional
-/// name to avoid bloating the class definitions.
-///
-using enum Feature;
 
 using FeatureSet = detail::Flags<Feature>;
 
@@ -254,7 +250,7 @@ inline void Property<Object, Value, Label, Features>::setValueImpl(Value &&newVa
 template <class Object, typename Value, LabelId Label, FeatureSet Features>
 inline void Property<Object, Value, Label, Features>::notify(Value newValue)
 {
-    static_assert(hasFeature(Notify));
+    static_assert(isNotifiable());
     const auto target = object();
     Q_ASSERT(target != nullptr);
 
