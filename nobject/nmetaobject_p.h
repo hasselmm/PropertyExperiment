@@ -160,7 +160,13 @@ namespace nproperty {
 template <class Object, typename Value, LabelId Label, FeatureSet Features>
 constexpr const char *Property<Object, Value, Label, Features>::name() noexcept
 {
-    return Object::template member(tag()).name;
+    // HACK: This lambda is a workaround for MSVC wrongly reporting C7595:
+    // 'npropertytest::HelloWorld::member': call to immediate function is not a constant expression
+    constexpr auto name = [](const auto &member) {
+        return member.name;
+    };
+
+    return name(Object::member(tag()));
 }
 
 } // namespace nproperty
