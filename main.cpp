@@ -32,6 +32,7 @@ enum Feature
     PropertyNotifications   = 1 << 7,
     NotifyPointers          = 1 << 8,
     ClassInfo               = 1 << 9,
+    Interfaces              = 1 << 10,
 };
 
 /// By default all features are considered enabled, and no features are skipped.
@@ -70,6 +71,17 @@ template<> constexpr auto implementedFeatures<SObjectTest>
 template<> constexpr auto implementedFeatures<MObjectTest>
     = implementedFeatures<>
       & ~ClassInfo
+      & ~Interfaces
+    ;
+
+template<> constexpr auto skippedFeatures<NObjectMacro>
+    = skippedFeatures<>
+      | Interfaces
+    ;
+
+template<> constexpr auto skippedFeatures<NObjectModern>
+    = skippedFeatures<>
+      | Interfaces
     ;
 
 template<> constexpr auto skippedFeatures<NObjectLegacy>
@@ -78,6 +90,7 @@ template<> constexpr auto skippedFeatures<NObjectLegacy>
       | PropertyChanges
       | PropertyNotifications
       | NotifyPointers
+      | Interfaces
     ;
 
 /// Just a tiny wrapper with simple name for the pretty verbose
@@ -174,6 +187,13 @@ private slots:
 
     void testClassInfo()                    { runTestFunction(); }
     void testClassInfo_data()               { MAKE_TESTDATA(testClassInfo); }
+
+    void testInterfaces()                    { runTestFunction(); }
+    void testInterfaces_data()               { MAKE_TESTDATA(testInterfaces); }
+
+    /// --------------------------------------------------------------------------------------------
+    /// An NObject specific test, testing its HelloWorld class and unique features
+    /// --------------------------------------------------------------------------------------------
 
     void testNObject()
     {
@@ -718,6 +738,63 @@ private:
     static void testClassInfo(T &)
     {
         if (isSkippedFeature<ClassInfo, T>)
+            QSKIP("Not implemented yet");
+    }
+
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that interfaces are supported
+    /// --------------------------------------------------------------------------------------------
+
+    template <HasFeature<Interfaces> T>
+    static void testInterfaces(T &object)
+    {
+        QCOMPARE(qobject_interface_iid<experiment::InterfaceOne *>(),
+                                       "experiment/InterfaceOne/1.0");
+        QCOMPARE(qobject_interface_iid<experiment::InterfaceTwo *>(),
+                                       "experiment/InterfaceTwo/1.0");
+
+        QVERIFY(qobject_cast<QObject                  *>(&object));
+        QVERIFY(qobject_cast<experiment::ParentClass  *>(&object));
+        QVERIFY(qobject_cast<experiment::InterfaceOne *>(&object));
+        QVERIFY(qobject_cast<experiment::InterfaceTwo *>(&object));
+
+        QCOMPARE(qobject_cast<QObject                  *>(&object),
+                  static_cast<QObject                  *>(&object));
+        QCOMPARE(qobject_cast<experiment::ParentClass  *>(&object),
+                  static_cast<experiment::ParentClass  *>(&object));
+        QCOMPARE(qobject_cast<experiment::InterfaceOne *>(&object),
+                  static_cast<experiment::InterfaceOne *>(&object));
+        QCOMPARE(qobject_cast<experiment::InterfaceTwo *>(&object),
+                  static_cast<experiment::InterfaceTwo *>(&object));
+
+        QCOMPARE(object.qt_metacast("QObject"),
+                         static_cast<QObject *>(&object));
+        QCOMPARE(object.qt_metacast("experiment::ParentClass"),
+                         static_cast<experiment::ParentClass  *>(&object));
+        QCOMPARE(object.qt_metacast("experiment::InterfaceOne"),
+                         static_cast<experiment::InterfaceOne *>(&object));
+        QCOMPARE(object.qt_metacast("experiment::InterfaceTwo"),
+                         static_cast<experiment::InterfaceTwo *>(&object));
+
+        QCOMPARE(object.qt_metacast("experiment/InterfaceOne/1.0"),
+                 static_cast<experiment::InterfaceOne *>(&object));
+        QCOMPARE(object.qt_metacast("experiment/InterfaceTwo/1.0"),
+                 static_cast<experiment::InterfaceTwo *>(&object));
+
+        QCOMPARE(object.qt_metacast(object.metaObject()->className()), &object);
+        QCOMPARE(object.qt_metacast("nonsense"),                       nullptr);
+        QCOMPARE(object.qt_metacast(nullptr),                          nullptr);
+
+        QCOMPARE(qobject_cast<experiment::InterfaceOne *>(&object)
+                     -> firstInterfaceCall(),  "first");
+        QCOMPARE(qobject_cast<experiment::InterfaceTwo *>(&object)
+                     ->secondInterfaceCall(), "second");
+    }
+
+    template <class T>
+    static void testInterfaces(T &)
+    {
+        if (isSkippedFeature<Interfaces, T>)
             QSKIP("Not implemented yet");
     }
 
