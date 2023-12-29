@@ -39,6 +39,7 @@ codepoetry_add_compile_options(
     -Werror=sign-conversion
     -Werror=switch
     -Werror=unused
+    -Werror=unused-result
     CLANG GNU
 )
 
