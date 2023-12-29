@@ -83,9 +83,9 @@ struct MemberInfo
 
     Type            type            = Type::Invalid;
     int             valueType       = QMetaType::UnknownType;
-    FeatureSet      features;
-    LabelId         label;
-    const char     *name;
+    FeatureSet      features        = {};
+    LabelId         label           = 0;
+    const char     *name            = nullptr;
 
     OffsetFunction  resolveOffset   = nullptr;
     ReadFunction    readProperty    = nullptr;
