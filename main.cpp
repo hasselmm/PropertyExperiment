@@ -1,11 +1,19 @@
 #include "aobject/aobjecttest.h"
 #include "mobject/mobjecttest.h"
+#include "nobject/nobjecttest.h"
 #include "sobject/sobjecttest.h"
 
 #include <QSignalSpy>
 #include <QTest>
 
 namespace {
+
+using apropertytest::AObjectTest;
+using mpropertytest::MObjectTest;
+using npropertytest::NObjectMacro;
+using npropertytest::NObjectModern;
+using npropertytest::NObjectLegacy;
+using spropertytest::SObjectTest;
 
 /// The following is a system of concepts, constants and flags that
 /// allow to disable test features which cannot get compiled, or simply
@@ -44,17 +52,28 @@ concept HasFeature = (isImplementedFeature<feature, T>
 
 /// Finally the type specific feature configurations.
 ///
-template<> constexpr auto implementedFeatures<aproperty::AObject>
+template<> constexpr auto implementedFeatures<AObjectTest>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
       & ~PropertyAddresses      // properties do not have their own objects with moc
-      & ~NotifyPointers;        // properties do not have their own objects with moc
+      & ~NotifyPointers         // properties do not have their own objects with moc
+    ;
 
-template<> constexpr auto implementedFeatures<sproperty::SObject>
+template<> constexpr auto implementedFeatures<SObjectTest>
     = implementedFeatures<>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
       & ~PropertyAddresses      // properties do not have their own objects with moc
-      & ~NotifyPointers;        // properties do not have their own objects with moc
+      & ~NotifyPointers         // properties do not have their own objects with moc
+    ;
+
+template<> constexpr uint skippedFeatures<NObjectLegacy>
+    = skippedFeatures<>
+      | MethodDefinitions
+      | SignalAddresses
+      | PropertyChanges
+      | PropertyNotifications
+      | NotifyPointers
+    ;
 
 /// Just a tiny wrapper with simple name for the pretty verbose
 /// `!std::is_member_function_pointer_v<decltype(&T::member)>`.
@@ -148,6 +167,81 @@ private slots:
     void testPropertyNotifications()        { runTestFunction(); }
     void testPropertyNotifications_data()   { MAKE_TESTDATA(testPropertyNotifications); }
 
+    void testNObject()
+    {
+        using npropertytest::HelloWorld;
+
+        auto object     = HelloWorld{};
+        auto metaObject = object.staticMetaObject;
+
+        SHOW(object.hello.label());
+        SHOW(object.world.label());
+
+        SHOW(object.hello.name());
+        SHOW(object.world.name());
+
+        SHOW(object.hello.value());
+        SHOW(object.world.value());
+
+        SHOW(object.hello());
+        SHOW(object.world());
+
+        SHOW(object.hello);
+        SHOW(object.world);
+
+        const auto indices = QSet{object.hello.label(),
+                                  object.world.label()};
+
+        QCOMPARE(indices.count(), 2);
+
+        QCOMPARE(object.hello.name(), "hello");
+        QCOMPARE(object.world.name(), "world");
+
+        SHOW(object.hello.features().value);
+        SHOW(object.world.features().value);
+
+        static_assert( object.hello.isReadable());
+        static_assert(!object.hello.isResetable());
+        static_assert(!object.hello.isNotifiable());
+        static_assert(!object.hello.isWritable());
+
+        static_assert( object.world.isReadable());
+        static_assert(!object.world.isResetable());
+        static_assert( object.world.isNotifiable());
+        static_assert( object.world.isWritable());
+
+        SHOW(metaObject.property(1).read(&object));
+        SHOW(metaObject.property(2).read(&object));
+
+        connect(&object, object.world.notifyPointer(), this, [](int newValue) {
+            qInfo("World has changed to %d...", newValue);
+        });
+
+        object.world.connect(this, [](int newValue) {
+            qInfo("The world totally has changed to %d...", newValue);
+        });
+
+        object.world = 13;
+
+        using nproperty::detail::Prototype;
+
+        // The objects returned by Prototype::get() are uninitialized, unconstructed data.
+        // The test will randomly crash when QCOMPARE() doesn't try to read metaObject(),
+        // and the like.
+
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get<HelloWorld>()),
+                 reinterpret_cast<quintptr>(Prototype::get<HelloWorld>()));
+
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get<HelloWorld>()),
+                 reinterpret_cast<quintptr>(Prototype::get<NObjectMacro>()));
+
+        QCOMPARE(reinterpret_cast<quintptr>(Prototype::get(&HelloWorld::hello)),
+                 reinterpret_cast<quintptr>(Prototype::get(&HelloWorld::hello)));
+
+        QVERIFY(reinterpret_cast<quintptr>(Prototype::get(&HelloWorld::hello))
+             != reinterpret_cast<quintptr>(Prototype::get(&HelloWorld::world)));
+    }
+
 private:
 
     /// --------------------------------------------------------------------------------------------
@@ -187,9 +281,9 @@ private:
         QCOMPARE(metaObject.methodCount(), 7);
     }
 
-    static void testMetaObject(mproperty::MObject &object)
+    static void testMetaObject(MObjectTest &object)
     {
-        testMetaObject<mproperty::MObject>(object);
+        testMetaObject<MObjectTest>(object);
 
         QCOMPARE(sizeof(object.constant),           sizeof(QString));
         QCOMPARE(sizeof(object.notifying),          sizeof(QString));
@@ -279,9 +373,9 @@ private:
         static_assert(std::is_unsigned_v<decltype(object.constant.address())>);
         static_assert(std::is_unsigned_v<decltype(object.constant.offset())>);
 
-        const auto uniqueIds = QSet{object. constant.index(),
-                                    object.notifying.index(),
-                                    object. writable.index()};
+        const auto uniqueIds = QSet{object. constant.label(),
+                                    object.notifying.label(),
+                                    object. writable.label()};
 
         QCOMPARE(uniqueIds.size(), 3);
 
@@ -470,9 +564,9 @@ private:
         QCOMPARE(object.property("writable"),   metacall1);
     }
 
-    static void testPropertyChanges(mproperty::MObject &object)
+    static void testPropertyChanges(MObjectTest &object)
     {
-        testPropertyChanges<mproperty::MObject>(object);
+        testPropertyChanges<MObjectTest>(object);
 
         // object.constant = u"error"_s;    // compile error
         // object.notifying = u"error"_s;   // FIXME: currently would work, but shouldn't
@@ -574,11 +668,11 @@ private:
         QCOMPARE(writableSpy,                   writableSpy3);
     }
 
-    static void testPropertyNotifications(mproperty::MObject &object,
-                                          QSignalSpy   &notifyingSpy,
-                                          QSignalSpy    &writableSpy)
+    static void testPropertyNotifications(MObjectTest &object,
+                                          QSignalSpy  &notifyingSpy,
+                                          QSignalSpy  &writableSpy)
     {
-        testPropertyNotifications<mproperty::MObject>(object, notifyingSpy, writableSpy);
+        testPropertyNotifications<MObjectTest>(object, notifyingSpy, writableSpy);
 
         // object.constant = u"error"_s;    // compile error
         // object.notifying = u"error"_s;   // FIXME: currently would work, but shouldn't
@@ -619,16 +713,25 @@ private:
         QTest::addColumn<QByteArray>         ("expectedClassName");
         QTest::addColumn<QByteArray>         ("expectedSuperClassName");
 
-        makeTestRow<Delegate, aproperty::AObject>("aproperty",
-                                                  "aproperty::AObject");
-        makeTestRow<Delegate, mproperty::MObject>("mproperty",
-                                                  "mproperty::MObject",
-                                                  "mproperty::MObjectBase");
-        makeTestRow<Delegate, sproperty::SObject>("sproperty",
-                                                  "sproperty::SObject");
+        makeTestRow<Delegate, AObjectTest>  ("apropertytest",
+                                             "apropertytest::AObjectTest");
+        makeTestRow<Delegate, MObjectTest>  ("mpropertytest",
+                                             "mpropertytest::MObjectTest",
+                                             "mpropertytest::MObjectBase");
+        makeTestRow<Delegate, NObjectMacro> ("npropertytest:macro",
+                                             "npropertytest::NObjectMacro",
+                                             "npropertytest::NObjectBase");
+        makeTestRow<Delegate, NObjectModern>("npropertytest:modern",
+                                             "npropertytest::NObjectModern",
+                                             "npropertytest::NObjectBase");
+        makeTestRow<Delegate, NObjectLegacy>("npropertytest:legacy",
+                                             "npropertytest::NObjectLegacy",
+                                             "npropertytest::NObjectBase");
+        makeTestRow<Delegate, SObjectTest>  ("spropertytest",
+                                             "spropertytest::SObjectTest");
     }
 
-    template<class Delegate, class T>
+    template<typename Delegate, class T>
     void makeTestRow(const char *tag,
                      QByteArray  className,
                      QByteArray  superName = "QObject")

@@ -1,14 +1,18 @@
-#ifndef AOBJECTTEST_H
-#define AOBJECTTEST_H
+#ifndef APROPERTY_AOBJECTTEST_H
+#define APROPERTY_AOBJECTTEST_H
 
 #include "aproperty.h"
 
 #include <QObject>
 #include <QString>
 
-namespace aproperty {
+namespace apropertytest {
 
-class AObject : public QObject
+using aproperty::Property;
+using aproperty::Notifying;
+using aproperty::Setter;
+
+class AObjectTest : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString constant READ constant CONSTANT FINAL)
@@ -25,12 +29,12 @@ signals:
     void writableChanged(QString writable);
 
 public:
-    Property<QString>                     constant  = {u"I am constant"_qs};
-    Notifying<&AObject::notifyingChanged> notifying = {this, u"I am observing"_qs};
-    Notifying<&AObject::writableChanged>  writable  = {this, u"I am modifiable"_qs};
-    const Setter<QString>              setWritable  = {&writable};
+    Property<QString>                         constant     = {u"I am constant"_qs};
+    Notifying<&AObjectTest::notifyingChanged> notifying    = {this, u"I am observing"_qs};
+    Notifying<&AObjectTest::writableChanged>  writable     = {this, u"I am modifiable"_qs};
+    const Setter<QString>                     setWritable  = {&writable};
 };
 
 } // namespace aproperty
 
-#endif // AOBJECTTEST_H
+#endif // APROPERTY_AOBJECTTEST_H

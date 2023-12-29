@@ -6,7 +6,10 @@
 #include <QObject>
 #include <QString>
 
-namespace mproperty {
+namespace mpropertytest {
+
+using enum mproperty::Feature;
+using      mproperty::Signal;
 
 class MObjectBase : public QObject // for testing base type mechanism
 {
@@ -16,7 +19,7 @@ public:
     using QObject::QObject;
 };
 
-class MObject : public Object<MObject, MObjectBase>
+class MObjectTest : public mproperty::Object<MObjectTest, MObjectBase>
 {
     M_OBJECT
 
@@ -34,8 +37,8 @@ public:
 
     Setter<QString> setWritable = &writable;
 
-    static constexpr Signal<&MObject::notifying> notifyingChanged = {};
-    static constexpr Signal<&MObject::writable> writableChanged = {};
+    static constexpr Signal<&MObjectTest::notifying> notifyingChanged = {};
+    static constexpr Signal<&MObjectTest::writable>  writableChanged  = {};
 };
 
 // FIXME The n() function is just a fancy way to generate generate
@@ -44,6 +47,6 @@ public:
 // returns the from current line number. Maybe there is some meta
 // programming magic to get entirely rid of it.
 
-} // namespace mproperty
+} // namespace mpropertytest
 
 #endif // MOBJECTTEST_H

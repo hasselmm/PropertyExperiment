@@ -39,6 +39,7 @@ codepoetry_add_compile_options(
     -Werror=sign-conversion
     -Werror=switch
     -Werror=unused
+    -Werror=unused-result
     CLANG GNU
 )
 
@@ -74,25 +75,24 @@ codepoetry_add_link_options   (CLANG_MAXIMUM_VERSION 15 -stdlib=libc++)
 # https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options
 codepoetry_add_compile_options(MSVC /W3 /permissive- /utf-8)
 
+add_subdirectory(aobject)
+add_subdirectory(mobject)
+add_subdirectory(nobject)
+add_subdirectory(sobject)
+
 add_executable(
     PropertyExperiment
     main.cpp
-
-    aobject/aobjecttest.cpp
-    aobject/aobjecttest.h
-    aobject/aproperty.cpp
-    aobject/aproperty.h
-    mobject/mobjecttest.cpp
-    mobject/mobjecttest.h
-    mobject/mproperty.cpp
-    mobject/mproperty.h
-    sobject/sobjecttest.cpp
-    sobject/sobjecttest.h
+    README.md
+    LICENSE
 )
 
 target_link_libraries(
     PropertyExperiment
-    Qt::CorePrivate
+    AObjectTest
+    MObjectTest
+    NObjectTest
+    SObjectTest
     Qt::Test
 )
 
@@ -112,11 +112,6 @@ install(
     TARGETS PropertyExperiment
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-
-add_custom_target(
-    Documentation SOURCES
-    LICENSE README.md
 )
 
 add_custom_target(
