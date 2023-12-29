@@ -2,6 +2,20 @@
 
 namespace npropertytest {
 
+class CheckAssertions : public HelloWorld
+{
+    static void check()
+    {
+        using nproperty::detail::Tag;
+
+        static_assert(decltype(HelloWorld::hello)::label() == 25);
+        static_assert(std::is_same_v<Tag<25>, decltype(HelloWorld::hello)::TagType>);
+        static_assert(std::is_same_v<Tag<25>, decltype(decltype(HelloWorld::hello)::tag())>);
+        static_assert(!hasMember<24>());
+        static_assert( hasMember<25>());
+    }
+};
+
 N_OBJECT_IMPLEMENTATION(HelloWorld)
 N_OBJECT_IMPLEMENTATION(NObjectMacro)
 N_OBJECT_IMPLEMENTATION(NObjectModern)

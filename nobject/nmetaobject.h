@@ -6,6 +6,9 @@
 
 namespace nproperty {
 
+template<class ObjectType, class SuperType>
+class Object;
+
 /// This class provides the introspection information for this `ObjectType`.
 ///
 /// Template arguments:
@@ -19,6 +22,8 @@ class MetaObject
     : public detail::MetaObjectData // FIXME: make private or protected
     , public QMetaObject
 {
+    friend Object<ObjectType, SuperType>;
+
 public:
     MetaObject()
         : MetaObjectData{}
@@ -106,6 +111,12 @@ protected:
     static consteval auto makeMember(const char *name) noexcept
     {
         return detail::MemberInfo::make<Property>(name);
+    }
+
+    template <LabelId N>
+    static constexpr bool hasMember() noexcept
+    {
+        return MetaObject::template hasMember<ObjectType, N>();
     }
 
 public: // FIXME: make signalProxy() protected again

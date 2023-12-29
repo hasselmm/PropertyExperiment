@@ -22,10 +22,11 @@ public:                                                                         
     { return &staticMetaObject; }                                               \
     static const MetaObject staticMetaObject;                                   \
                                                                                 \
-private:                                                                        \
+protected:                                                                      \
     template <quintptr N>                                                       \
-    static consteval ::nproperty::detail::MemberInfo                            \
-    member(::nproperty::detail::Tag<N>) { return {}; }                          \
+    static consteval void member(::nproperty::detail::Tag<N>) {}                \
+                                                                                \
+private:                                                                        \
     static consteval quintptr lineOffset() { return __LINE__; }                 \
     friend ::nproperty::detail::MetaObjectData;                                 \
     friend MetaObject;                                                          \
@@ -42,7 +43,7 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 
 // FIXME: doxs
 #define N_REGISTER_PROPERTY(PropertyName) \
-static consteval auto member(::nproperty::detail::Tag<__LINE__>) \
+    static consteval auto member(::nproperty::detail::Tag<__LINE__>) \
     { return makeMember<&decltype(PropertyName)::ObjectType::PropertyName>(#PropertyName); }
 
 #define N_PROPERTY_NOTIFICATION(PropertyName) \
