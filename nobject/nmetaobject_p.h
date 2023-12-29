@@ -17,13 +17,9 @@ struct MemberInfo
 {
     enum class Type {
         Invalid,
-        Property,
-        Setter,
-        Method,
-        Signal,
-        Slot,
-        Constructor,
         ClassInfo,
+        Property,
+        Signal,
     };
 
     using  OffsetFunction =     quintptr(*)();

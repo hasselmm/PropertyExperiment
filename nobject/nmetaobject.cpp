@@ -265,11 +265,7 @@ const QMetaObject *MetaObjectBuilder::build(const QMetaType          &metaType,
             makeClassInfo(metaObject, member);
             break;
 
-        case MemberInfo::Type::Setter:
-        case MemberInfo::Type::Method:
         case MemberInfo::Type::Signal:
-        case MemberInfo::Type::Slot:
-        case MemberInfo::Type::Constructor:
         case MemberInfo::Type::Invalid:
             break;
         }
