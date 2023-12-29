@@ -134,7 +134,11 @@ public: // FIXME: make signalProxy() protected again
 /// Alias for a properties change notification signal.
 /// Use it to simulate the established Qt code style.
 ///
-template<auto Property>
+/// The `ObjectType` argument is simply a work around for Clang 16 wrongly
+/// resolving `Property` in the N_PROPERTY_NOTIFICATION() macro. You can
+/// usually ignore it.
+///
+template<auto Property, typename ObjectType = void>
 requires(detail::DataMemberType<Property>::isNotifiable())
 class Signal
 {

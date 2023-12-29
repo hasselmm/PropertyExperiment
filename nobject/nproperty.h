@@ -47,7 +47,8 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
     { return makeMember<&decltype(PropertyName)::ObjectType::PropertyName>(#PropertyName); }
 
 #define N_PROPERTY_NOTIFICATION(PropertyName) \
-    static constexpr ::nproperty::Signal<&decltype(PropertyName)::ObjectType::PropertyName> \
+    static constexpr ::nproperty::Signal<&decltype(PropertyName)::ObjectType::PropertyName, \
+                                          decltype(PropertyName)::ObjectType> \
     PropertyName ## Changed = {};
 
 #define N_PROPERTY_SETTER(SetterName, PropertyName) \
