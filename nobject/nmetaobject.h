@@ -102,6 +102,12 @@ protected:
         QMetaObject::activate(this, metaObject, methodIndex, metaCallArgs.data());
     }
 
+    template <auto Property>
+    static consteval auto makeMember(const char *name) noexcept
+    {
+        return detail::MemberInfo::make<Property>(name);
+    }
+
 public: // FIXME: make signalProxy() protected again
     template<typename Value, LabelId Label, FeatureSet Features>
     static detail::MemberFunction<ObjectType, void, Value>

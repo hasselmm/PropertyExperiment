@@ -40,13 +40,9 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 
 
 // FIXME: doxs
-#define N_REGISTER_PROPERTY_WITH_LABEL(PropertyName, Label) \
-    static consteval auto member(detail::Tag<Label>) \
-    { using ObjectType = decltype(PropertyName)::ObjectType; \
-      return detail::MemberInfo::make<&ObjectType::PropertyName>(#PropertyName); }
-
 #define N_REGISTER_PROPERTY(PropertyName) \
-    N_REGISTER_PROPERTY_WITH_LABEL(PropertyName, decltype(PropertyName)::label())
+static consteval auto member(::nproperty::detail::Tag<__LINE__>) \
+    { return makeMember<&decltype(PropertyName)::ObjectType::PropertyName>(#PropertyName); }
 
 #define N_PROPERTY_NOTIFICATION(PropertyName) \
     static constexpr Signal<&decltype(PropertyName)::ObjectType::PropertyName> \
@@ -79,7 +75,7 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 /// FIXME: consider wording for `detail::LineNumber::current()`
 ///
 #define N_PROPERTY(Type, Name, ...) \
-    N_REGISTER_PROPERTY_WITH_LABEL(Name, __LINE__) \
+    N_REGISTER_PROPERTY(Name) \
     Property<Type, __LINE__, ##__VA_ARGS__> Name
 
 
