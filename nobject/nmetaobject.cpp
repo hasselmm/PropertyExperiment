@@ -123,6 +123,19 @@ void MetaObjectData::metaCall(QObject           *object,
               static_cast<const void *>(args));
 }
 
+void *MetaObjectData::interfaceCast(QObject *object, const char *name) const
+{
+    for (const auto iface : m_interfaceOffsets
+                                | std::views::transform(makeOffsetToInterface())) {
+        if (std::strcmp(name, iface->name) == 0)
+            return iface->metacast(object);
+        if (std::strcmp(name, iface->value) == 0) // FIXME: there should be an alias that says `iid`
+            return iface->metacast(object);
+    }
+
+    return nullptr;
+}
+
 void MetaObjectData::validateMembers() const
 {
     if (lcMetaObject().isDebugEnabled()) {
@@ -177,6 +190,21 @@ quintptr MetaObjectData::memberOffset(LabelId label) const noexcept
 
     qCCritical(lcMetaObject, "Could not find a member with label %zd", label);
     return 0;
+}
+
+std::function<const MemberInfo *(quintptr)> MetaObjectData::makeOffsetToInterface() const noexcept
+{
+    return [this](quintptr offset) {
+        const auto interfaceInfo = memberInfo(offset);
+
+        Q_ASSERT(interfaceInfo           != nullptr);
+        Q_ASSERT(interfaceInfo->type     == MemberInfo::Type::Interface);
+        Q_ASSERT(interfaceInfo->name     != nullptr);
+        Q_ASSERT(interfaceInfo->value    != nullptr);
+        Q_ASSERT(interfaceInfo->metacast != nullptr);
+
+        return interfaceInfo;
+    };
 }
 
 std::function<const MemberInfo *(quintptr)> MetaObjectData::makeOffsetToSignal() const noexcept

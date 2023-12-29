@@ -78,12 +78,8 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
         return MemberInfo{name, resolveOffset, selector};
     }
 
-<<<<<<< HEAD
     static consteval MemberInfo makeClassInfo(LabelId     label,
                                               const char *name,
-=======
-    static consteval MemberInfo makeClassInfo(const char *name,
->>>>>>> 2463cef (Allow to store interface information in MemberInfo)
                                               const char *value) noexcept
     {
         auto classInfo  = MemberInfo{};
@@ -135,6 +131,7 @@ public:
 protected:
     void emplace(MemberInfo &&member);
     void metaCall(QObject *object, QMetaObject::Call call, int offset, void **args) const;
+    void *interfaceCast(QObject *object, const char *name) const;
 
     template<class Object, quintptr N>
     static consteval bool hasMember()
@@ -151,6 +148,7 @@ private:
     [[nodiscard]] const MemberInfo *propertyInfo(MemberOffset offset) const noexcept;
     [[nodiscard]] const MemberInfo *memberInfo  (MemberOffset offset) const noexcept;
 
+    [[nodiscard]] std::function<const MemberInfo *(quintptr)> makeOffsetToInterface() const noexcept;
     [[nodiscard]] std::function<const MemberInfo *(quintptr)> makeOffsetToSignal() const noexcept;
     [[nodiscard]] int metaMethodForPointer(const void *pointer) const noexcept;
 

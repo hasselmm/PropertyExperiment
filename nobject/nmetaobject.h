@@ -30,6 +30,18 @@ public:
         , QMetaObject{*build()} // FIXME: Is this a leak, or not?
     {}
 
+    void *metaCast(ObjectType *object, const char *name) const
+    {
+        if (name == nullptr)
+            return nullptr; // guard strcmp() from segfault
+        if (std::strcmp(name, className()) == 0)
+            return object;
+        if (const auto result = interfaceCast(object, name))
+            return result;
+
+        return object->SuperType::qt_metacast(name);
+    }
+
 private:
     const QMetaObject *build()
     {
