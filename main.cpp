@@ -68,7 +68,6 @@ template<> constexpr auto implementedFeatures<SObjectTest>
 
 template<> constexpr uint skippedFeatures<NObjectLegacy>
     = skippedFeatures<>
-      | MethodDefinitions
       | SignalAddresses
       | PropertyChanges
       | PropertyNotifications
