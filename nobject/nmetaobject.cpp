@@ -75,6 +75,9 @@ void MetaObjectData::emplace(MemberInfo &&member)
     if (Q_UNLIKELY(!member))
         return;
 
+    if (member.type == MemberInfo::Type::Interface)
+        m_interfaceOffsets.emplace_back(m_members.size());
+
     if (member.type == MemberInfo::Type::Property) {
         if (canonical(member.features).contains(Feature::Notify))
             m_signalOffsets.emplace_back(m_members.size());
@@ -266,6 +269,7 @@ const QMetaObject *MetaObjectBuilder::build(const QMetaType          &metaType,
             break;
 
         case MemberInfo::Type::Signal:
+        case MemberInfo::Type::Interface:
         case MemberInfo::Type::Invalid:
             break;
         }

@@ -13,10 +13,11 @@ namespace nproperty::detail {
 
 /// Introspection information about class members.
 ///
-struct MemberInfo
+struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like...
 {
     enum class Type {
         Invalid,
+        Interface,
         ClassInfo,
         Property,
         Signal,
@@ -27,6 +28,7 @@ struct MemberInfo
     using   WriteFunction =         void(*)(QObject *, void *);
     using   ResetFunction =         void(*)(QObject *);
     using PointerFunction = const void *(*)();
+    using    CastFunction =       void *(*)(QObject *);
 
     consteval MemberInfo() noexcept = default;
 
@@ -76,8 +78,12 @@ struct MemberInfo
         return MemberInfo{name, resolveOffset, selector};
     }
 
+<<<<<<< HEAD
     static consteval MemberInfo makeClassInfo(LabelId     label,
                                               const char *name,
+=======
+    static consteval MemberInfo makeClassInfo(const char *name,
+>>>>>>> 2463cef (Allow to store interface information in MemberInfo)
                                               const char *value) noexcept
     {
         auto classInfo  = MemberInfo{};
@@ -86,6 +92,18 @@ struct MemberInfo
         classInfo.name  = name;
         classInfo.value = value;
         return classInfo;
+    }
+
+    static constexpr MemberInfo makeInterface(const char  *name,
+                                              const char   *iid,
+                                              CastFunction cast) noexcept
+    {
+        auto interfaceInfo     = MemberInfo{};
+        interfaceInfo.type     = MemberInfo::Type::Interface;
+        interfaceInfo.name     = name;
+        interfaceInfo.value    = iid;
+        interfaceInfo.metacast = cast;
+        return interfaceInfo;
     }
 
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
@@ -102,6 +120,7 @@ struct MemberInfo
     WriteFunction   writeProperty   = nullptr;
     ResetFunction   resetProperty   = nullptr;
     PointerFunction pointer         = nullptr;
+    CastFunction    metacast        = nullptr;
 };
 
 /// Introspection information about a C++ class that can be used to build a `QMetaObject`.
@@ -143,6 +162,7 @@ private:
 private:
     MemberTable m_members;
 
+    std::vector<MemberOffset> m_interfaceOffsets;
     std::vector<MemberOffset> m_propertyOffsets;
     std::vector<MemberOffset> m_signalOffsets;
 };
