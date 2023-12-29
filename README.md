@@ -33,7 +33,7 @@ public:
 };
 ```
 
-The code works, and I am pretty happy with the syntax of `NObject`.
+The code works, and I am pretty happy with the syntax of [`NObject`](nobject/README.md).
 
 [![Build and Test with Clang](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-clang.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-clang.yml)
 [![Build and Test with GCC](https://github.com/hasselmm/PropertyExperiment/actions/workflows/autotest-gcc.yml/badge.svg)](https://github.com/hasselmm/PropertyExperiment/actions/workflows/cmake-autotest-gccl)
