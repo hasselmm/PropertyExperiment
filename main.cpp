@@ -204,6 +204,16 @@ private slots:
         SHOW(metaObject.property(1).read(&object));
         SHOW(metaObject.property(2).read(&object));
 
+        connect(&object, object.world.notifyPointer(), this, [](int newValue) {
+            qInfo("World has changed to %d...", newValue);
+        });
+
+        object.world.connect(this, [](int newValue) {
+            qInfo("The world totally has changed to %d...", newValue);
+        });
+
+        object.world = 13;
+
         using nproperty::detail::Prototype;
 
         // The objects returned by Prototype::get() are uninitialized, unconstructed data.

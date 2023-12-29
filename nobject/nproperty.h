@@ -4,8 +4,7 @@
 #include "nproperty_p.h"
 #include "ntypetraits.h"
 
-#include <QMetaObject>
-#include <QMetaType>
+#include <QObject>
 
 namespace nproperty {
 
@@ -170,6 +169,12 @@ public:
     /// Signal emission
     ///
     void notify(Value newValue);
+
+    template<std::derived_from<QObject> Receiver, typename Functor>
+    QMetaObject::Connection connect(Receiver *context, Functor functor) const
+    {
+        return QObject::connect(object(), notifyPointer(), context, std::move(functor));
+    }
 
 protected:
     using ProtectedValue = std::conditional_t<!isWritable(), ValueType, std::monostate>;
