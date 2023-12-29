@@ -233,6 +233,10 @@ const QMetaObject *MetaObjectBuilder::build(const QMetaType          &metaType,
             makeProperty(metaObject, member);
             break;
 
+        case MemberInfo::Type::ClassInfo:
+            makeClassInfo(metaObject, member);
+            break;
+
         case MemberInfo::Type::Setter:
         case MemberInfo::Type::Method:
         case MemberInfo::Type::Signal:
@@ -272,6 +276,12 @@ void MetaObjectBuilder::makeProperty(QMetaObjectBuilder &metaObject,
     } else {
         metaProperty.setConstant(true);
     }
+}
+
+void MetaObjectBuilder::makeClassInfo(QMetaObjectBuilder &metaObject,
+                                      const MemberInfo   &classInfo)
+{
+    metaObject.addClassInfo(classInfo.name, classInfo.value);
 }
 
 } // namespace nproperty::detail

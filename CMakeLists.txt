@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(PropertyExperiment LANGUAGES CXX)
+project(
+    PropertyExperiment
+    LANGUAGES CXX
+    HOMEPAGE_URL "https://github.com/hasselmm/PropertyExperiment/")
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(CodePoetryCompileOptions)
@@ -102,6 +105,8 @@ set(TEST_FLAGS)
 if (JUNIT_REPORTS)
     list(APPEND TEST_FLAGS -junitxml -o "$<CONFIG>-junit.xml")
 endif()
+
+add_compile_definitions(PROJECT_HOMEPAGE_URL="${CMAKE_PROJECT_HOMEPAGE_URL}")
 
 add_test(
     NAME PropertyExperiment

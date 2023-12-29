@@ -109,9 +109,14 @@ protected:
     }
 
     template <auto Property>
-    static consteval auto makeMember(const char *name) noexcept
+    static consteval auto makeProperty(const char *name) noexcept
     {
-        return detail::MemberInfo::make<Property>(name);
+        return detail::MemberInfo::makeProperty<Property>(name);
+    }
+
+    static consteval auto makeClassInfo(const char *name, const char *value) noexcept
+    {
+        return detail::MemberInfo::makeClassInfo(name, value);
     }
 
     template <LabelId N>
