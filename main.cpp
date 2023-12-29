@@ -67,9 +67,9 @@ template<> constexpr auto implementedFeatures<SObjectTest>
       & ~NotifyPointers         // properties do not have their own objects with moc
     ;
 
-template<> constexpr uint skippedFeatures<MObjectTest>
-    = skippedFeatures<>
-      | ClassInfo
+template<> constexpr auto implementedFeatures<MObjectTest>
+    = implementedFeatures<>
+      & ~ClassInfo
     ;
 
 template<> constexpr uint skippedFeatures<NObjectLegacy>
