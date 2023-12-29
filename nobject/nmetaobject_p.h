@@ -66,7 +66,7 @@ struct MemberInfo
     {}
 
     template<auto Property>
-    static consteval MemberInfo make(const char *name) noexcept
+    static consteval MemberInfo makeProperty(const char *name) noexcept
     {
         using Object = typename DataMemberType<Property>::ObjectType;
 
