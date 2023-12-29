@@ -72,7 +72,7 @@ template<> constexpr auto implementedFeatures<MObjectTest>
       & ~ClassInfo
     ;
 
-template<> constexpr uint skippedFeatures<NObjectLegacy>
+template<> constexpr auto skippedFeatures<NObjectLegacy>
     = skippedFeatures<>
       | SignalAddresses
       | PropertyChanges
