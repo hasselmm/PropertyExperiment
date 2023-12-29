@@ -61,6 +61,12 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
     void SetterName(decltype(TargetType::PropertyName)::ValueType newValue) \
     { PropertyName.setValue(std::move(newValue)); }
 
+/// Add class specific information to this class.
+/// It's the direct equivalent of `Q_CLASSINFO()`.
+///
+#define N_CLASSINFO(Name, Value) \
+    static consteval auto member(::nproperty::detail::Tag<__LINE__>) \
+    { return makeClassInfo((Name), (Value)); }
 
 /// This macro provides convenience and pretty syntax when adding new properties
 /// to a NObject.

@@ -31,6 +31,7 @@ enum Feature
     PropertyChanges         = 1 << 6,
     PropertyNotifications   = 1 << 7,
     NotifyPointers          = 1 << 8,
+    ClassInfo               = 1 << 9,
 };
 
 /// By default all features are considered enabled, and no features are skipped.
@@ -64,6 +65,11 @@ template<> constexpr auto implementedFeatures<SObjectTest>
       & ~UniquePropertyIds      // properties do not have their own objects with moc
       & ~PropertyAddresses      // properties do not have their own objects with moc
       & ~NotifyPointers         // properties do not have their own objects with moc
+    ;
+
+template<> constexpr uint skippedFeatures<MObjectTest>
+    = skippedFeatures<>
+      | ClassInfo
     ;
 
 template<> constexpr uint skippedFeatures<NObjectLegacy>
@@ -165,6 +171,9 @@ private slots:
 
     void testPropertyNotifications()        { runTestFunction(); }
     void testPropertyNotifications_data()   { MAKE_TESTDATA(testPropertyNotifications); }
+
+    void testClassInfo()                    { runTestFunction(); }
+    void testClassInfo_data()               { MAKE_TESTDATA(testClassInfo); }
 
     void testNObject()
     {
@@ -688,6 +697,28 @@ private:
     static void testPropertyNotifications(T &)
     {
         if (isSkippedFeature<PropertyNotifications, T>)
+            QSKIP("Not implemented yet");
+    }
+
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that classinfo is generated
+    /// --------------------------------------------------------------------------------------------
+
+    template <HasFeature<ClassInfo> T>
+    static void testClassInfo(T &)
+    {
+        const QMetaObject metaObject = T::staticMetaObject;
+
+        QCOMPARE(metaObject.classInfoCount(), 1);
+        QCOMPARE(metaObject.classInfoOffset(), 0);
+        QCOMPARE(metaObject.classInfo(0).name(), "URL");
+        QCOMPARE(metaObject.classInfo(0).value(), PROJECT_HOMEPAGE_URL);
+    }
+
+    template <class T>
+    static void testClassInfo(T &)
+    {
+        if (isSkippedFeature<ClassInfo, T>)
             QSKIP("Not implemented yet");
     }
 

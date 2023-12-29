@@ -23,6 +23,7 @@ struct MemberInfo
         Signal,
         Slot,
         Constructor,
+        ClassInfo,
     };
 
     using  OffsetFunction =     quintptr(*)();
@@ -79,6 +80,15 @@ struct MemberInfo
         return MemberInfo{name, resolveOffset, selector};
     }
 
+    static consteval MemberInfo makeClassInfo(const char *name, const char *value) noexcept
+    {
+        auto classInfo  = MemberInfo{};
+        classInfo.type  = MemberInfo::Type::ClassInfo;
+        classInfo.name  = name;
+        classInfo.value = value;
+        return classInfo;
+    }
+
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
 
     Type            type            = Type::Invalid;
@@ -86,6 +96,7 @@ struct MemberInfo
     FeatureSet      features        = {};
     LabelId         label           = 0;
     const char     *name            = nullptr;
+    const char     *value           = nullptr;
 
     OffsetFunction  resolveOffset   = nullptr;
     ReadFunction    readProperty    = nullptr;
@@ -148,8 +159,8 @@ public:
                                                   MetaCallFunction  metaCallFunction);
 
 private:
-    static void makeProperty(QMetaObjectBuilder &metaObject,
-                             const MemberInfo   &property);
+    static void makeProperty (QMetaObjectBuilder &metaObject, const MemberInfo &property);
+    static void makeClassInfo(QMetaObjectBuilder &metaObject, const MemberInfo &classInfo);
 };
 
 } // namespace nproperty::detail

@@ -18,6 +18,7 @@ class AObjectTest : public QObject
     Q_PROPERTY(QString constant READ constant CONSTANT FINAL)
     Q_PROPERTY(QString notifying READ notifying NOTIFY notifyingChanged FINAL)
     Q_PROPERTY(QString writable READ writable WRITE setWritable NOTIFY writableChanged FINAL)
+    Q_CLASSINFO("URL", "https://github.com/hasselmm/PropertyExperiment/")
 
 public:
     using QObject::QObject;

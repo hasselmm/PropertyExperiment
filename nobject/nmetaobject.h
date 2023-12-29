@@ -114,6 +114,11 @@ protected:
         return detail::MemberInfo::makeProperty<Property>(name);
     }
 
+    static consteval auto makeClassInfo(const char *name, const char *value) noexcept
+    {
+        return detail::MemberInfo::makeClassInfo(name, value);
+    }
+
     template <LabelId N>
     static constexpr bool hasMember() noexcept
     {

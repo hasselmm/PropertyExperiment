@@ -46,6 +46,7 @@ class NObjectMacro
     : public nproperty::Object<NObjectMacro, NObjectBase>
 {
     N_OBJECT
+    N_CLASSINFO("URL", "https://github.com/hasselmm/PropertyExperiment/")
 
 public:
     using Object::Object;
@@ -93,6 +94,9 @@ private:
     N_REGISTER_PROPERTY(constant);
     N_REGISTER_PROPERTY(notifying);
     N_REGISTER_PROPERTY(writable);
+
+    static consteval auto member(::nproperty::detail::Tag<l()>)
+    { return makeClassInfo("URL", "https://github.com/hasselmm/PropertyExperiment/"); }
 };
 
 /// This class implements an NObject based QObject using more traditional C++
@@ -118,6 +122,9 @@ private:
     N_REGISTER_PROPERTY(constant);
     N_REGISTER_PROPERTY(notifying);
     N_REGISTER_PROPERTY(writable);
+
+    static consteval auto member(::nproperty::detail::Tag<__LINE__>)
+    { return makeClassInfo("URL", "https://github.com/hasselmm/PropertyExperiment/"); }
 };
 
 } // namespace npropertytest
