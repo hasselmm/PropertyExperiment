@@ -177,8 +177,20 @@ jobs:
       run: ctest --rerun-failed --output-on-failure --build-config RelWithDebInfo
 
 
+    - name: List build folder
+      working-directory: ${{steps.strings.outputs.build-output-dir}}
+      shell: bash
+      run: ls -l
+
     - name: Publish Test Report
       uses: mikepenz/action-junit-report@v4
       if: always()
       with:
         report_paths: "**/*-junit.xml"
+
+    - name: Archive build output on failure
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: build-output
+        path: "${{steps.strings.outputs.build-output-dir}}"
