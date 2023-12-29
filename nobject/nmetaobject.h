@@ -86,6 +86,7 @@ class Object
 
 public:
     using MetaObject = nproperty::MetaObject<ObjectType, SuperType>;
+    using TargetType = ObjectType;
     using SuperType::SuperType;
 
 protected:

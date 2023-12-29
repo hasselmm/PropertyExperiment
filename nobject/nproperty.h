@@ -44,15 +44,14 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
 // FIXME: doxs
 #define N_REGISTER_PROPERTY(PropertyName) \
     static consteval auto member(::nproperty::detail::Tag<__LINE__>) \
-    { return makeMember<&decltype(PropertyName)::ObjectType::PropertyName>(#PropertyName); }
+    { return makeMember<&TargetType::PropertyName>(#PropertyName); }
 
 #define N_PROPERTY_NOTIFICATION(PropertyName) \
-    static constexpr ::nproperty::Signal<&decltype(PropertyName)::ObjectType::PropertyName, \
-                                          decltype(PropertyName)::ObjectType> \
-    PropertyName ## Changed = {};
+    static constexpr ::nproperty::Signal<&TargetType::PropertyName, \
+                                          TargetType> PropertyName ## Changed = {};
 
 #define N_PROPERTY_SETTER(SetterName, PropertyName) \
-    void SetterName(decltype(PropertyName)::ValueType newValue) \
+    void SetterName(decltype(TargetType::PropertyName)::ValueType newValue) \
     { PropertyName.setValue(std::move(newValue)); }
 
 
