@@ -96,9 +96,16 @@ target_link_libraries(
     Qt::Test
 )
 
+option(JUNIT_REPORTS "" NO) # FIXME
+set(TEST_FLAGS)
+
+if (JUNIT_REPORTS)
+    list(APPEND TEST_FLAGS -junitxml -o "$<CONFIG>-junit.xml")
+endif()
+
 add_test(
     NAME PropertyExperiment
-    COMMAND $<TARGET_FILE:PropertyExperiment>
+    COMMAND $<TARGET_FILE:PropertyExperiment> ${TEST_FLAGS}
 )
 
 install(
