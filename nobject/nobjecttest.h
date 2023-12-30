@@ -1,6 +1,7 @@
 #ifndef NPROPERTY_NOBJECTTEST_H
 #define NPROPERTY_NOBJECTTEST_H
 
+#include "experiment.h"
 #include "nmetaobject.h"
 #include "nproperty.h"
 
@@ -16,8 +17,7 @@ using enum nproperty::Feature;
 
 /// A very basic example demonstrating the concept of NObject
 ///
-class HelloWorld
-    : public nproperty::Object<HelloWorld>
+class HelloWorld : public nproperty::Object<HelloWorld>
 {
     N_OBJECT
 
@@ -27,23 +27,9 @@ public:
 };
 
 
-/// This class simply helps testing if the generated meta object
-/// provides proper information about the class hierarchy.
-///
-class NObjectBase
-    : public QObject // for testing base type mechanism
-{
-    Q_OBJECT
-
-public:
-    using QObject::QObject;
-};
-
-
 /// This class implements an NObject based QObject using macros.
 ///
-class NObjectMacro
-    : public nproperty::Object<NObjectMacro, NObjectBase>
+class NObjectMacro : public nproperty::Object<NObjectMacro, experiment::ParentClass>
 {
     N_OBJECT
     N_CLASSINFO("URL", "https://github.com/hasselmm/PropertyExperiment/")
@@ -68,8 +54,7 @@ public:
 
 /// This class implements an NObject based QObject using C++ 20.
 ///
-class NObjectModern
-    : public nproperty::Object<NObjectModern, NObjectBase>
+class NObjectModern : public nproperty::Object<NObjectModern, experiment::ParentClass>
 {
     N_OBJECT
 
@@ -101,8 +86,7 @@ private:
 
 /// This class implements an NObject based QObject using more traditional C++
 //
-class NObjectLegacy
-    : public nproperty::Object<NObjectLegacy, NObjectBase>
+class NObjectLegacy : public nproperty::Object<NObjectLegacy, experiment::ParentClass>
 {
     N_OBJECT
 

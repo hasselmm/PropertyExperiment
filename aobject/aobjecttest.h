@@ -2,6 +2,7 @@
 #define APROPERTY_AOBJECTTEST_H
 
 #include "aproperty.h"
+#include "experiment.h"
 
 #include <QObject>
 #include <QString>
@@ -12,7 +13,7 @@ using aproperty::Property;
 using aproperty::Notifying;
 using aproperty::Setter;
 
-class AObjectTest : public QObject
+class AObjectTest : public experiment::ParentClass
 {
     Q_OBJECT
     Q_PROPERTY(QString constant READ constant CONSTANT FINAL)
@@ -21,7 +22,7 @@ class AObjectTest : public QObject
     Q_CLASSINFO("URL", "https://github.com/hasselmm/PropertyExperiment/")
 
 public:
-    using QObject::QObject;
+    using ParentClass::ParentClass;
 
     void modifyNotifying() { notifying = u"I have been changed per method"_qs; }
 
