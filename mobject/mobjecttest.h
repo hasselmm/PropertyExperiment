@@ -1,6 +1,7 @@
 #ifndef MOBJECTTEST_H
 #define MOBJECTTEST_H
 
+#include "experiment.h"
 #include "mproperty.h"
 
 #include <QObject>
@@ -11,15 +12,7 @@ namespace mpropertytest {
 using enum mproperty::Feature;
 using      mproperty::Signal;
 
-class MObjectBase : public QObject // for testing base type mechanism
-{
-    Q_OBJECT
-
-public:
-    using QObject::QObject;
-};
-
-class MObjectTest : public mproperty::Object<MObjectTest, MObjectBase>
+class MObjectTest : public mproperty::Object<MObjectTest, experiment::ParentClass>
 {
     M_OBJECT
 

@@ -8,11 +8,13 @@ class CheckAssertions : public HelloWorld
     {
         using nproperty::detail::Tag;
 
-        static_assert(decltype(HelloWorld::hello)::label() == 25);
-        static_assert(std::is_same_v<Tag<25>, decltype(HelloWorld::hello)::TagType>);
-        static_assert(std::is_same_v<Tag<25>, decltype(decltype(HelloWorld::hello)::tag())>);
-        static_assert(!hasMember<24>());
-        static_assert( hasMember<25>());
+        constexpr auto expectedLine = 25;
+
+        static_assert(decltype(HelloWorld::hello)::label() == expectedLine);
+        static_assert(std::is_same_v<Tag<expectedLine>, decltype(HelloWorld::hello)::TagType>);
+        static_assert(std::is_same_v<Tag<expectedLine>, decltype(decltype(HelloWorld::hello)::tag())>);
+        static_assert(!hasMember<expectedLine - 1>());
+        static_assert( hasMember<expectedLine>());
     }
 };
 

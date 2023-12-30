@@ -67,12 +67,12 @@ template<> constexpr auto implementedFeatures<SObjectTest>
       & ~NotifyPointers         // properties do not have their own objects with moc
     ;
 
-template<> constexpr uint skippedFeatures<MObjectTest>
-    = skippedFeatures<>
-      | ClassInfo
+template<> constexpr auto implementedFeatures<MObjectTest>
+    = implementedFeatures<>
+      & ~ClassInfo
     ;
 
-template<> constexpr uint skippedFeatures<NObjectLegacy>
+template<> constexpr auto skippedFeatures<NObjectLegacy>
     = skippedFeatures<>
       | SignalAddresses
       | PropertyChanges
@@ -276,7 +276,6 @@ private:
             SHOW(sizeof(T::writable));
 
         const QFETCH(QByteArray, expectedClassName);
-        const QFETCH(QByteArray, expectedSuperClassName);
 
         QVERIFY(metaObject.d.data);
         QVERIFY(metaObject.className() != nullptr);
@@ -284,7 +283,7 @@ private:
 
         QCOMPARE(metaType.name(), expectedClassName);
         QCOMPARE(metaObject.className(), expectedClassName);
-        QCOMPARE(metaObject.superClass()->className(), expectedSuperClassName);
+        QCOMPARE(metaObject.superClass()->className(), "experiment::ParentClass");
         QCOMPARE(metaObject.propertyCount(), 4);
         QCOMPARE(metaObject.methodCount(), 7);
     }
@@ -741,37 +740,25 @@ private:
     {
         QTest::addColumn<TestFunctionPointer>("testFunctionPointer");
         QTest::addColumn<QByteArray>         ("expectedClassName");
-        QTest::addColumn<QByteArray>         ("expectedSuperClassName");
 
-        makeTestRow<Delegate, AObjectTest>  ("apropertytest",
-                                             "apropertytest::AObjectTest");
-        makeTestRow<Delegate, MObjectTest>  ("mpropertytest",
-                                             "mpropertytest::MObjectTest",
-                                             "mpropertytest::MObjectBase");
-        makeTestRow<Delegate, NObjectMacro> ("npropertytest:macro",
-                                             "npropertytest::NObjectMacro",
-                                             "npropertytest::NObjectBase");
-        makeTestRow<Delegate, NObjectModern>("npropertytest:modern",
-                                             "npropertytest::NObjectModern",
-                                             "npropertytest::NObjectBase");
-        makeTestRow<Delegate, NObjectLegacy>("npropertytest:legacy",
-                                             "npropertytest::NObjectLegacy",
-                                             "npropertytest::NObjectBase");
-        makeTestRow<Delegate, SObjectTest>  ("spropertytest",
-                                             "spropertytest::SObjectTest");
+        makeTestRow<Delegate, AObjectTest>  ("aproperty",        "apropertytest::AObjectTest");
+        makeTestRow<Delegate, MObjectTest>  ("mproperty",        "mpropertytest::MObjectTest");
+        makeTestRow<Delegate, NObjectMacro> ("nproperty:macro",  "npropertytest::NObjectMacro");
+        makeTestRow<Delegate, NObjectModern>("nproperty:modern", "npropertytest::NObjectModern");
+        makeTestRow<Delegate, NObjectLegacy>("nproperty:legacy", "npropertytest::NObjectLegacy");
+        makeTestRow<Delegate, SObjectTest>  ("sproperty",        "spropertytest::SObjectTest");
     }
 
     template<typename Delegate, class T>
     void makeTestRow(const char *tag,
-                     QByteArray  className,
-                     QByteArray  superName = "QObject")
+                     QByteArray  className)
     {
         // GCC fails to wrap template function pointers by QVariant on
         // Qt 6.2 for MacOS. Actually I am suprised that this worked at all.
         // So let's just erase the function type to make live easier for GCC.
         const auto testFunction = &PropertyExperiment::testFunction<Delegate, T>;
         const auto pointer = reinterpret_cast<TestFunctionPointer>(testFunction);
-        QTest::newRow(tag) << pointer << className << superName;
+        QTest::newRow(tag) << pointer << className;
     }
 
     template<class Delegate, class T>

@@ -78,6 +78,8 @@ codepoetry_add_link_options   (CLANG_MAXIMUM_VERSION 15 -stdlib=libc++)
 # https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options
 codepoetry_add_compile_options(MSVC /W3 /permissive- /utf-8)
 
+include_directories(experiment)
+
 add_subdirectory(aobject)
 add_subdirectory(mobject)
 add_subdirectory(nobject)
@@ -85,6 +87,8 @@ add_subdirectory(sobject)
 
 add_executable(
     PropertyExperiment
+    experiment/experiment.cpp
+    experiment/experiment.h
     main.cpp
     README.md
     LICENSE

@@ -1,11 +1,13 @@
 #ifndef SPROPERTY_SOBJECTTEST_H
 #define SPROPERTY_SOBJECTTEST_H
 
+#include "experiment.h"
+
 #include <QObject>
 
 namespace spropertytest {
 
-class SObjectTest : public QObject
+class SObjectTest : public experiment::ParentClass
 {
     Q_OBJECT
     Q_PROPERTY(QString constant READ constant CONSTANT FINAL)
@@ -14,7 +16,7 @@ class SObjectTest : public QObject
     Q_CLASSINFO("URL", "https://github.com/hasselmm/PropertyExperiment/")
 
 public:
-    using QObject::QObject;
+    using ParentClass::ParentClass;
 
     QString constant() const;
 
