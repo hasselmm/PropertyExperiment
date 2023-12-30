@@ -127,7 +127,7 @@ static constexpr FeatureSet canonical(FeatureSet features)
 
 /// A unique number identifying members within their object, usually just the line number.
 ///
-using LabelId = quintptr;
+using LabelId = std::uintptr_t;
 
 /// A QObject property that's fully defined in pure C++.
 ///

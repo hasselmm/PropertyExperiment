@@ -127,6 +127,8 @@ protected:
         return std::is_same_v<MemberInfo, decltype(Object::member(Tag<N>{}))>;
     }
 
+    void validateMembers() const;
+
 private:
     using MemberTable  = std::vector<MemberInfo>;
     using MemberOffset = MemberTable::size_type;

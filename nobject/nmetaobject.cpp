@@ -13,6 +13,10 @@ namespace {
 
 Q_LOGGING_CATEGORY(lcMetaObject, "nproperty.metaobject");
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 3, 0)
+#define qAbort() std::abort()
+#endif
+
 namespace ranges {
 
 template<typename T>
@@ -116,6 +120,29 @@ void MetaObjectData::metaCall(QObject           *object,
               static_cast<const void *>(args));
 }
 
+void MetaObjectData::validateMembers() const
+{
+    if (lcMetaObject().isDebugEnabled()) {
+        for (const auto &member: m_members) {
+            qCDebug(lcMetaObject, R"(Member(label=%zd, type=%d, name="%s"))",
+                    member.label, static_cast<int>(member.type), member.name);
+        }
+    }
+
+    for (auto i = 0u, j = 1u; j < m_members.size(); i = j, ++j) {
+        if (m_members[i].label > m_members[j].label) {
+            qCCritical(lcMetaObject,
+                       R"(Assertion %zd <= %zd failed for "%s" and "%s" at index %u and %u. )"
+                       R"(The members of this class are not in strict order. Efficient, binary )"
+                       R"(member search is not possible. Aborting.)",
+                       m_members[i].label, m_members[j].label,
+                       m_members[i] .name, m_members[j] .name, i, j);
+
+            qAbort();
+        }
+    }
+}
+
 const MemberInfo *MetaObjectData::propertyInfo(MemberOffset offset) const noexcept
 {
     if (Q_UNLIKELY(offset >= m_propertyOffsets.size()))
@@ -145,6 +172,7 @@ quintptr MetaObjectData::memberOffset(LabelId label) const noexcept
         return it->resolveOffset();
     }
 
+    qCCritical(lcMetaObject, "Could not find a member with label %zd", label);
     return 0;
 }
 

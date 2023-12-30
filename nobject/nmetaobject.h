@@ -37,6 +37,7 @@ private:
             constexpr auto lineCount = std::max(sizeof(ObjectType), MaximumLineCount);
             constexpr auto lines = std::make_integer_sequence<LabelId, lineCount>();
             registerMembers<ObjectType::lineOffset()>(data, lines);
+            data->validateMembers();
 
             return detail::MetaObjectBuilder::build(QMetaType::fromType<ObjectType>(),
                                                     &SuperType::staticMetaObject,
