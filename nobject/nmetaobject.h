@@ -37,6 +37,7 @@ private:
             constexpr auto lineCount = std::max(sizeof(ObjectType), MaximumLineCount);
             constexpr auto lines = std::make_integer_sequence<LabelId, lineCount>();
             registerMembers<ObjectType::lineOffset()>(data, lines);
+            data->validateMembers();
 
             return detail::MetaObjectBuilder::build(QMetaType::fromType<ObjectType>(),
                                                     &SuperType::staticMetaObject,
@@ -114,9 +115,10 @@ protected:
         return detail::MemberInfo::makeProperty<Property>(name);
     }
 
-    static consteval auto makeClassInfo(const char *name, const char *value) noexcept
+    static consteval auto makeClassInfo(const char *name, const char *value,
+                                        LabelId label = detail::LineNumber::current()) noexcept
     {
-        return detail::MemberInfo::makeClassInfo(name, value);
+        return detail::MemberInfo::makeClassInfo(label, name, value);
     }
 
     template <LabelId N>

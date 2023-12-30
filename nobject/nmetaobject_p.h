@@ -80,10 +80,13 @@ struct MemberInfo
         return MemberInfo{name, resolveOffset, selector};
     }
 
-    static consteval MemberInfo makeClassInfo(const char *name, const char *value) noexcept
+    static consteval MemberInfo makeClassInfo(LabelId     label,
+                                              const char *name,
+                                              const char *value) noexcept
     {
         auto classInfo  = MemberInfo{};
         classInfo.type  = MemberInfo::Type::ClassInfo;
+        classInfo.label = label;
         classInfo.name  = name;
         classInfo.value = value;
         return classInfo;
@@ -123,6 +126,8 @@ protected:
     {
         return std::is_same_v<MemberInfo, decltype(Object::member(Tag<N>{}))>;
     }
+
+    void validateMembers() const;
 
 private:
     using MemberTable  = std::vector<MemberInfo>;
