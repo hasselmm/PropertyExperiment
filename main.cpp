@@ -74,23 +74,12 @@ template<> constexpr auto implementedFeatures<MObjectTest>
       & ~Interfaces
     ;
 
-template<> constexpr auto skippedFeatures<NObjectMacro>
-    = skippedFeatures<>
-      | Interfaces
-    ;
-
-template<> constexpr auto skippedFeatures<NObjectModern>
-    = skippedFeatures<>
-      | Interfaces
-    ;
-
 template<> constexpr auto skippedFeatures<NObjectLegacy>
     = skippedFeatures<>
       | SignalAddresses
       | PropertyChanges
       | PropertyNotifications
       | NotifyPointers
-      | Interfaces
     ;
 
 /// Just a tiny wrapper with simple name for the pretty verbose
@@ -188,8 +177,8 @@ private slots:
     void testClassInfo()                    { runTestFunction(); }
     void testClassInfo_data()               { MAKE_TESTDATA(testClassInfo); }
 
-    void testInterfaces()                    { runTestFunction(); }
-    void testInterfaces_data()               { MAKE_TESTDATA(testInterfaces); }
+    void testInterfaces()                   { runTestFunction(); }
+    void testInterfaces_data()              { MAKE_TESTDATA(testInterfaces); }
 
     /// --------------------------------------------------------------------------------------------
     /// An NObject specific test, testing its HelloWorld class and unique features

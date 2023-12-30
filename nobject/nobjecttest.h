@@ -29,7 +29,11 @@ public:
 
 /// This class implements an NObject based QObject using macros.
 ///
-class NObjectMacro : public nproperty::Object<NObjectMacro, experiment::ParentClass>
+class NObjectMacro
+    : public nproperty::Object<NObjectMacro,
+                               experiment::ParentClass,
+                               experiment::InterfaceOne,
+                               experiment::InterfaceTwo>
 {
     N_OBJECT
     N_CLASSINFO("URL", "https://github.com/hasselmm/PropertyExperiment/")
@@ -50,11 +54,19 @@ public:
     N_PROPERTY_NOTIFICATION(writable)
 
     N_PROPERTY_SETTER(setWritable, writable)
+
+public:
+    const char *firstInterfaceCall() const override { return "first"; }
+    const char *secondInterfaceCall() const override { return "second"; }
 };
 
 /// This class implements an NObject based QObject using C++ 20.
 ///
-class NObjectModern : public nproperty::Object<NObjectModern, experiment::ParentClass>
+class NObjectModern
+    : public nproperty::Object<NObjectModern,
+                               experiment::ParentClass,
+                               experiment::InterfaceOne,
+                               experiment::InterfaceTwo>
 {
     N_OBJECT
 
@@ -82,11 +94,19 @@ private:
 
     static consteval auto member(::nproperty::detail::Tag<l()>)
     { return makeClassInfo("URL", "https://github.com/hasselmm/PropertyExperiment/"); }
+
+public:
+    const char *firstInterfaceCall() const override { return "first"; }
+    const char *secondInterfaceCall() const override { return "second"; }
 };
 
 /// This class implements an NObject based QObject using more traditional C++
 //
-class NObjectLegacy : public nproperty::Object<NObjectLegacy, experiment::ParentClass>
+class NObjectLegacy
+    : public nproperty::Object<NObjectLegacy,
+                               experiment::ParentClass,
+                               experiment::InterfaceOne,
+                               experiment::InterfaceTwo>
 {
     N_OBJECT
 
@@ -109,6 +129,10 @@ private:
 
     static consteval auto member(::nproperty::detail::Tag<__LINE__>)
     { return makeClassInfo("URL", "https://github.com/hasselmm/PropertyExperiment/"); }
+
+public:
+    const char *firstInterfaceCall() const override { return "first"; }
+    const char *secondInterfaceCall() const override { return "second"; }
 };
 
 } // namespace npropertytest

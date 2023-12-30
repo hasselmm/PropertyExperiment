@@ -2,8 +2,8 @@
 
 namespace experiment {
 
-static_assert(qobject_interface_iid<InterfaceOne *>());
-static_assert(qobject_interface_iid<InterfaceTwo *>());
+static_assert(requires { qobject_interface_iid<InterfaceOne *>(); });
+static_assert(requires { qobject_interface_iid<InterfaceTwo *>(); });
 
 } // namespace experiment
 
