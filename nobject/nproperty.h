@@ -16,7 +16,7 @@ public:                                                                         
     int qt_metacall(QMetaObject::Call call, int offset, void **args) override   \
     { return staticMetaObject.static_metacall(call, offset, args); }            \
     void *qt_metacast(const char *name) override                                \
-    { qCritical("%s(%s)", Q_FUNC_INFO, name); return nullptr; }                 \
+    { return staticMetaObject.metaCast(this, name); }                           \
     const QMetaObject *metaObject() const override                              \
     { return &staticMetaObject; }                                               \
     static const MetaObject staticMetaObject;                                   \

@@ -13,17 +13,14 @@ namespace nproperty::detail {
 
 /// Introspection information about class members.
 ///
-struct MemberInfo
+struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like...
 {
     enum class Type {
         Invalid,
-        Property,
-        Setter,
-        Method,
-        Signal,
-        Slot,
-        Constructor,
+        Interface,
         ClassInfo,
+        Property,
+        Signal,
     };
 
     using  OffsetFunction =     quintptr(*)();
@@ -31,6 +28,7 @@ struct MemberInfo
     using   WriteFunction =         void(*)(QObject *, void *);
     using   ResetFunction =         void(*)(QObject *);
     using PointerFunction = const void *(*)();
+    using    CastFunction =       void *(*)(QObject *);
 
     consteval MemberInfo() noexcept = default;
 
@@ -92,6 +90,18 @@ struct MemberInfo
         return classInfo;
     }
 
+    static constexpr MemberInfo makeInterface(const char  *name,
+                                              const char   *iid,
+                                              CastFunction cast) noexcept
+    {
+        auto interfaceInfo     = MemberInfo{};
+        interfaceInfo.type     = MemberInfo::Type::Interface;
+        interfaceInfo.name     = name;
+        interfaceInfo.value    = iid;
+        interfaceInfo.metacast = cast;
+        return interfaceInfo;
+    }
+
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
 
     Type            type            = Type::Invalid;
@@ -106,6 +116,7 @@ struct MemberInfo
     WriteFunction   writeProperty   = nullptr;
     ResetFunction   resetProperty   = nullptr;
     PointerFunction pointer         = nullptr;
+    CastFunction    metacast        = nullptr;
 };
 
 /// Introspection information about a C++ class that can be used to build a `QMetaObject`.
@@ -120,6 +131,7 @@ public:
 protected:
     void emplace(MemberInfo &&member);
     void metaCall(QObject *object, QMetaObject::Call call, int offset, void **args) const;
+    void *interfaceCast(QObject *object, const char *name) const;
 
     template<class Object, quintptr N>
     static consteval bool hasMember()
@@ -136,6 +148,7 @@ private:
     [[nodiscard]] const MemberInfo *propertyInfo(MemberOffset offset) const noexcept;
     [[nodiscard]] const MemberInfo *memberInfo  (MemberOffset offset) const noexcept;
 
+    [[nodiscard]] std::function<const MemberInfo *(quintptr)> makeOffsetToInterface() const noexcept;
     [[nodiscard]] std::function<const MemberInfo *(quintptr)> makeOffsetToSignal() const noexcept;
     [[nodiscard]] int metaMethodForPointer(const void *pointer) const noexcept;
 
@@ -147,6 +160,7 @@ private:
 private:
     MemberTable m_members;
 
+    std::vector<MemberOffset> m_interfaceOffsets;
     std::vector<MemberOffset> m_propertyOffsets;
     std::vector<MemberOffset> m_signalOffsets;
 };

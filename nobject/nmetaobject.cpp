@@ -75,6 +75,9 @@ void MetaObjectData::emplace(MemberInfo &&member)
     if (Q_UNLIKELY(!member))
         return;
 
+    if (member.type == MemberInfo::Type::Interface)
+        m_interfaceOffsets.emplace_back(m_members.size());
+
     if (member.type == MemberInfo::Type::Property) {
         if (canonical(member.features).contains(Feature::Notify))
             m_signalOffsets.emplace_back(m_members.size());
@@ -118,6 +121,19 @@ void MetaObjectData::metaCall(QObject           *object,
               "Unsupported metacall for %s: call=%d, offset=%d, args=%p",
               object->metaObject()->className(), call, offset,
               static_cast<const void *>(args));
+}
+
+void *MetaObjectData::interfaceCast(QObject *object, const char *name) const
+{
+    for (const auto iface : m_interfaceOffsets
+                                | std::views::transform(makeOffsetToInterface())) {
+        if (std::strcmp(name, iface->name) == 0)
+            return iface->metacast(object);
+        if (std::strcmp(name, iface->value) == 0) // FIXME: there should be an alias that says `iid`
+            return iface->metacast(object);
+    }
+
+    return nullptr;
 }
 
 void MetaObjectData::validateMembers() const
@@ -174,6 +190,21 @@ quintptr MetaObjectData::memberOffset(LabelId label) const noexcept
 
     qCCritical(lcMetaObject, "Could not find a member with label %zd", label);
     return 0;
+}
+
+std::function<const MemberInfo *(quintptr)> MetaObjectData::makeOffsetToInterface() const noexcept
+{
+    return [this](quintptr offset) {
+        const auto interfaceInfo = memberInfo(offset);
+
+        Q_ASSERT(interfaceInfo           != nullptr);
+        Q_ASSERT(interfaceInfo->type     == MemberInfo::Type::Interface);
+        Q_ASSERT(interfaceInfo->name     != nullptr);
+        Q_ASSERT(interfaceInfo->value    != nullptr);
+        Q_ASSERT(interfaceInfo->metacast != nullptr);
+
+        return interfaceInfo;
+    };
 }
 
 std::function<const MemberInfo *(quintptr)> MetaObjectData::makeOffsetToSignal() const noexcept
@@ -265,11 +296,8 @@ const QMetaObject *MetaObjectBuilder::build(const QMetaType          &metaType,
             makeClassInfo(metaObject, member);
             break;
 
-        case MemberInfo::Type::Setter:
-        case MemberInfo::Type::Method:
         case MemberInfo::Type::Signal:
-        case MemberInfo::Type::Slot:
-        case MemberInfo::Type::Constructor:
+        case MemberInfo::Type::Interface:
         case MemberInfo::Type::Invalid:
             break;
         }

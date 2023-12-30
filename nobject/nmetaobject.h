@@ -6,23 +6,32 @@
 
 namespace nproperty {
 
-template<class ObjectType, class SuperType>
+/// Restrict to classes that are Qt interfaces.
+/// These are abstract classes with a `Q_DECLARE_INTERFACE()` declaration.
+///
+template<class T>
+concept QtInterface = requires { qobject_interface_iid<T *>(); }
+                      && std::is_abstract_v<T>;
+
+template<class ObjectType, class SuperType, QtInterface... Interfaces>
 class Object;
+
+template<class T>
+constexpr std::size_t MaximumLineCount = 0;
 
 /// This class provides the introspection information for this `ObjectType`.
 ///
 /// Template arguments:
 /// * `ObjectType`       - the type of the object to describe
 /// * `SuperType`        - the super class of `ObjectType`
-/// * `MaximumLineCount` - the maximum number of lines in the class definition,
-///                        simply sizeof(ObjectType) if zero gets passed
 ///
-template<class ObjectType, class SuperType, std::size_t MaximumLineCount = 0>
+template<class ObjectType, class SuperType, QtInterface... Interfaces>
 class MetaObject
     : public detail::MetaObjectData // FIXME: make private or protected
     , public QMetaObject
 {
     friend Object<ObjectType, SuperType>;
+    friend ObjectType;
 
 public:
     MetaObject()
@@ -30,11 +39,23 @@ public:
         , QMetaObject{*build()} // FIXME: Is this a leak, or not?
     {}
 
+    void *metaCast(ObjectType *object, const char *name) const
+    {
+        if (name == nullptr)
+            return nullptr; // guard strcmp() from segfault
+        if (std::strcmp(name, className()) == 0)
+            return object;
+        if (const auto result = interfaceCast(object, name))
+            return result;
+
+        return object->SuperType::qt_metacast(name);
+    }
+
 private:
     const QMetaObject *build()
     {
         static const auto s_metaObject = [](MetaObject *data) {
-            constexpr auto lineCount = std::max(sizeof(ObjectType), MaximumLineCount);
+            constexpr auto lineCount = std::max(sizeof(ObjectType), MaximumLineCount<ObjectType>);
             constexpr auto lines = std::make_integer_sequence<LabelId, lineCount>();
             registerMembers<ObjectType::lineOffset()>(data, lines);
             data->validateMembers();
@@ -54,6 +75,7 @@ private:
     template<quintptr Offset, LabelId... Labels>
     static void registerMembers(MetaObject *data, const LabelSequence<Labels...> &)
     {
+        (registerInterface<Interfaces>(data), ...);
         (registerMember<Offset + Labels>(data), ...);
     }
 
@@ -63,6 +85,19 @@ private:
         // the constexpr is essential here to avoid generating huge amount of code
         if constexpr (hasMember<ObjectType, Label>())
             data->emplace(ObjectType::member(detail::Tag<Label>{}));
+    }
+
+    template<typename Interface>
+    static void registerInterface(MetaObject *data)
+    {
+        const auto iid  = qobject_interface_iid<Interface *>();
+        const auto type = QMetaType::fromType<Interface>();
+        const auto cast = [](QObject *object) {
+            const auto self = static_cast<ObjectType *>(object);
+            return static_cast<void *>(static_cast<Interface *>(self));
+        };
+
+        data->emplace(detail::MemberInfo::makeInterface(type.name(), iid, cast));
     }
 
     static void staticMetaCall(QObject *object, QMetaObject::Call call, int offset, void **args)
@@ -78,16 +113,18 @@ private:
 ///
 /// FIXME: Check if this class can be removed.
 ///
-template <class ObjectType, class SuperType = QObject>
+template <class ObjectType, class SuperType = QObject, QtInterface... Interfaces>
 class Object
     : public SuperType
+    , public Interfaces...
 {
-    friend nproperty::MetaObject<ObjectType, SuperType>;
+    friend nproperty::MetaObject<ObjectType, SuperType, Interfaces...>;
     friend nproperty::detail::MemberInfo;
 
 public:
-    using MetaObject = nproperty::MetaObject<ObjectType, SuperType>;
+    using MetaObject = nproperty::MetaObject<ObjectType, SuperType, Interfaces...>;
     using TargetType = ObjectType;
+
     using SuperType::SuperType;
 
 protected:
