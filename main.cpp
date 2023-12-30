@@ -147,37 +147,37 @@ class PropertyExperiment: public QObject
     /// --------------------------------------------------------------------------------------------
 
 private slots:
-    void testMetaObject()                   { runTestFunction(); }
+    void testMetaObject()                   { runFeatureTest(); }
     void testMetaObject_data()              { MAKE_TESTDATA(MetaObject); }
 
-    void testPropertyDefinitions()          { runTestFunction(); }
+    void testPropertyDefinitions()          { runFeatureTest(); }
     void testPropertyDefinitions_data()     { MAKE_TESTDATA(PropertyDefinitions); }
 
-    void testUniquePropertyIds()            { runTestFunction(); }
+    void testUniquePropertyIds()            { runFeatureTest(); }
     void testUniquePropertyIds_data()       { MAKE_TESTDATA(UniquePropertyIds); }
 
-    void testPropertyAddresses()            { runTestFunction(); }
+    void testPropertyAddresses()            { runFeatureTest(); }
     void testPropertyAddresses_data()       { MAKE_TESTDATA(PropertyAddresses); }
 
-    void testMethodDefinitions()            { runTestFunction(); }
+    void testMethodDefinitions()            { runFeatureTest(); }
     void testMethodDefinitions_data()       { MAKE_TESTDATA(MethodDefinitions); }
 
-    void testSignalAddresses()              { runTestFunction(); }
+    void testSignalAddresses()              { runFeatureTest(); }
     void testSignalAddresses_data()         { MAKE_TESTDATA(SignalAddresses); }
 
-    void testNotifyPointers()               { runTestFunction(); }
+    void testNotifyPointers()               { runFeatureTest(); }
     void testNotifyPointers_data()          { MAKE_TESTDATA(NotifyPointers); }
 
-    void testPropertyChanges()              { runTestFunction(); }
+    void testPropertyChanges()              { runBenchmark(); }
     void testPropertyChanges_data()         { MAKE_TESTDATA(PropertyChanges); }
 
-    void testPropertyNotifications()        { runTestFunction(); }
+    void testPropertyNotifications()        { runBenchmark(); }
     void testPropertyNotifications_data()   { MAKE_TESTDATA(PropertyNotifications); }
 
-    void testClassInfo()                    { runTestFunction(); }
+    void testClassInfo()                    { runFeatureTest(); }
     void testClassInfo_data()               { MAKE_TESTDATA(ClassInfo); }
 
-    void testInterfaces()                   { runTestFunction(); }
+    void testInterfaces()                   { runBenchmark(); }
     void testInterfaces_data()              { MAKE_TESTDATA(Interfaces); }
 
     /// --------------------------------------------------------------------------------------------
@@ -717,7 +717,7 @@ private:
     using TestFunction = void (*)();
     using TestFunctionPointer = void *;
 
-    void runTestFunction()
+    void runFeatureTest()
     {
         const QFETCH(TestFunctionPointer, testFunctionPointer);
         const auto testFunction = reinterpret_cast<TestFunction>(testFunctionPointer);
@@ -728,7 +728,21 @@ private:
         testFunction();
     }
 
-    template<class Delegate>
+    void runBenchmark()
+    {
+        const QFETCH(TestFunctionPointer, testFunctionPointer);
+        const auto testFunction = reinterpret_cast<TestFunction>(testFunctionPointer);
+
+        if (testFunction == nullptr)
+            QSKIP("Not implemented yet");
+
+        QBENCHMARK {
+            for (auto i = 0; i < 1000; ++i)
+                testFunction();
+        }
+    }
+
+    template<Feature feature, class Delegate>
     void makeTestData()
     {
         QTest::addColumn<TestFunctionPointer>("testFunctionPointer");
@@ -746,7 +760,6 @@ private:
     void makeTestRow()
     {
         if constexpr (isImplementedFeature<feature, T>) {
-            const auto className = T::staticMetaObject.className();
             const auto testFunction = []() -> TestFunctionPointer {
                 if constexpr (!isSkippedFeature<feature, T>) {
                     // GCC fails to wrap template function pointers by QVariant on
@@ -759,7 +772,11 @@ private:
                 return nullptr;
             }();
 
-            QTest::newRow(className) << testFunction << QByteArray{className};
+            const auto className = T::staticMetaObject.className();
+            const auto tag = std::strrchr(className, ':') + 1;
+            Q_ASSERT((tag - 1) != nullptr && tag[-1] == ':');
+
+            QTest::newRow(tag) << testFunction << QByteArray{className};
         }
     }
 
