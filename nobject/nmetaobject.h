@@ -9,15 +9,16 @@ namespace nproperty {
 template<class ObjectType, class SuperType>
 class Object;
 
+template<class T>
+constexpr std::size_t MaximumLineCount = 0;
+
 /// This class provides the introspection information for this `ObjectType`.
 ///
 /// Template arguments:
 /// * `ObjectType`       - the type of the object to describe
 /// * `SuperType`        - the super class of `ObjectType`
-/// * `MaximumLineCount` - the maximum number of lines in the class definition,
-///                        simply sizeof(ObjectType) if zero gets passed
 ///
-template<class ObjectType, class SuperType, std::size_t MaximumLineCount = 0>
+template<class ObjectType, class SuperType>
 class MetaObject
     : public detail::MetaObjectData // FIXME: make private or protected
     , public QMetaObject
@@ -46,7 +47,7 @@ private:
     const QMetaObject *build()
     {
         static const auto s_metaObject = [](MetaObject *data) {
-            constexpr auto lineCount = std::max(sizeof(ObjectType), MaximumLineCount);
+            constexpr auto lineCount = std::max(sizeof(ObjectType), MaximumLineCount<ObjectType>);
             constexpr auto lines = std::make_integer_sequence<LabelId, lineCount>();
             registerMembers<ObjectType::lineOffset()>(data, lines);
             data->validateMembers();
