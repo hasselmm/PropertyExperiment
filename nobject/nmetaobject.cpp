@@ -68,6 +68,11 @@ const void *memberToPointer(const MemberInfo *member)
     return member->pointer();
 }
 
+QByteArray toByteArray(const std::string_view &sv)
+{
+    return QByteArray{sv.data(), static_cast<int>(sv.size())};
+}
+
 } // namespace
 
 void MetaObjectData::emplace(MemberInfo &&member)
@@ -123,13 +128,13 @@ void MetaObjectData::metaCall(QObject           *object,
               static_cast<const void *>(args));
 }
 
-void *MetaObjectData::interfaceCast(QObject *object, const char *name) const
+void *MetaObjectData::interfaceCast(QObject *object, std::string_view name) const
 {
     for (const auto iface : m_interfaceOffsets
                                 | std::views::transform(makeOffsetToInterface())) {
-        if (std::strcmp(name, iface->name) == 0)
+        if (name == iface->name)
             return iface->metacast(object);
-        if (std::strcmp(name, iface->value) == 0) // FIXME: there should be an alias that says `iid`
+        if (name == iface->value) // FIXME: there should be an alias that says `iid`
             return iface->metacast(object);
     }
 
@@ -141,7 +146,8 @@ void MetaObjectData::validateMembers() const
     if (lcMetaObject().isDebugEnabled()) {
         for (const auto &member: m_members) {
             qCDebug(lcMetaObject, R"(Member(label=%zd, type=%d, name="%s"))",
-                    member.label, static_cast<int>(member.type), member.name);
+                    member.label, static_cast<int>(member.type),
+                    member.name.data());
         }
     }
 
@@ -151,8 +157,9 @@ void MetaObjectData::validateMembers() const
                        R"(Assertion %zd <= %zd failed for "%s" and "%s" at index %u and %u. )"
                        R"(The members of this class are not in strict order. Efficient, binary )"
                        R"(member search is not possible. Aborting.)",
-                       m_members[i].label, m_members[j].label,
-                       m_members[i] .name, m_members[j] .name, i, j);
+                       m_members[i].label,       m_members[j].label,
+                       m_members[i].name.data(), m_members[j].name.data(),
+                       i, j);
 
             qAbort();
         }
@@ -199,8 +206,8 @@ std::function<const MemberInfo *(quintptr)> MetaObjectData::makeOffsetToInterfac
 
         Q_ASSERT(interfaceInfo           != nullptr);
         Q_ASSERT(interfaceInfo->type     == MemberInfo::Type::Interface);
-        Q_ASSERT(interfaceInfo->name     != nullptr);
-        Q_ASSERT(interfaceInfo->value    != nullptr);
+        Q_ASSERT(interfaceInfo->name     != std::string_view{});
+        Q_ASSERT(interfaceInfo->value    != std::string_view{});
         Q_ASSERT(interfaceInfo->metacast != nullptr);
 
         return interfaceInfo;
@@ -312,8 +319,7 @@ void MetaObjectBuilder::makeProperty(QMetaObjectBuilder &metaObject,
 {
     const auto features = canonical(property.features);
     const auto type     = QMetaType{property.valueType};
-
-    auto metaProperty   = metaObject.addProperty(property.name, type.name(), type);
+    auto metaProperty   = metaObject.addProperty(toByteArray(property.name), type.name(), type);
 
     metaProperty.setReadable  (features & Feature::Read);
     metaProperty.setWritable  (features & Feature::Write);
@@ -337,7 +343,7 @@ void MetaObjectBuilder::makeProperty(QMetaObjectBuilder &metaObject,
 void MetaObjectBuilder::makeClassInfo(QMetaObjectBuilder &metaObject,
                                       const MemberInfo   &classInfo)
 {
-    metaObject.addClassInfo(classInfo.name, classInfo.value);
+    metaObject.addClassInfo(toByteArray(classInfo.name), toByteArray(classInfo.value));
 }
 
 } // namespace nproperty::detail

@@ -34,7 +34,7 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
     consteval MemberInfo() noexcept = default;
 
     template <class Object, typename Value, LabelId Label, FeatureSet Features>
-    consteval MemberInfo(const char *name,
+    consteval MemberInfo(std::string_view        name,
                          OffsetFunction resolveOffset,
                          const Property<Object, Value, Label, Features> * = nullptr) noexcept
         : type{Type::Property}
@@ -66,7 +66,7 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
     {}
 
     template<auto Property>
-    static consteval MemberInfo makeProperty(const char *name) noexcept
+    static consteval MemberInfo makeProperty(std::string_view name) noexcept
     {
         using Object = typename DataMemberType<Property>::ObjectType;
 
@@ -76,18 +76,18 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
         };
 
         const auto selector = Prototype::null(Property);
-        return MemberInfo{name, resolveOffset, selector};
+        return MemberInfo{std::move(name), resolveOffset, selector};
     }
 
-    static consteval MemberInfo makeClassInfo(LabelId     label,
-                                              const char *name,
-                                              const char *value) noexcept
+    static consteval MemberInfo makeClassInfo(LabelId          label,
+                                              std::string_view name,
+                                              std::string_view value) noexcept
     {
         auto classInfo  = MemberInfo{};
         classInfo.type  = MemberInfo::Type::ClassInfo;
         classInfo.label = label;
-        classInfo.name  = name;
-        classInfo.value = value;
+        classInfo.name  = std::move(name);
+        classInfo.value = std::move(value);
         return classInfo;
     }
 
@@ -108,19 +108,19 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
 
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
 
-    Type            type            = Type::Invalid;
-    int             valueType       = QMetaType::UnknownType;
-    FeatureSet      features        = {};
-    LabelId         label           = 0;
-    const char     *name            = nullptr;
-    const char     *value           = nullptr;
+    Type             type           = Type::Invalid;
+    int              valueType      = QMetaType::UnknownType;
+    FeatureSet       features       = {};
+    LabelId          label          = 0;
+    std::string_view name;
+    std::string_view value;
 
-    OffsetFunction  resolveOffset   = nullptr;
-    ReadFunction    readProperty    = nullptr;
-    WriteFunction   writeProperty   = nullptr;
-    ResetFunction   resetProperty   = nullptr;
-    PointerFunction pointer         = nullptr;
-    CastFunction    metacast        = nullptr;
+    OffsetFunction   resolveOffset  = nullptr;
+    ReadFunction     readProperty   = nullptr;
+    WriteFunction    writeProperty  = nullptr;
+    ResetFunction    resetProperty  = nullptr;
+    PointerFunction  pointer        = nullptr;
+    CastFunction     metacast       = nullptr;
 };
 
 /// Introspection information about a C++ class that can be used to build a `QMetaObject`.
@@ -135,7 +135,7 @@ public:
 protected:
     void emplace(MemberInfo &&member);
     void metaCall(QObject *object, QMetaObject::Call call, int offset, void **args) const;
-    void *interfaceCast(QObject *object, const char *name) const;
+    void *interfaceCast(QObject *object, std::string_view name) const;
 
     template<class Object, quintptr N>
     static consteval bool hasMember()
@@ -191,8 +191,9 @@ private:
 namespace nproperty {
 
 // FIXME: move definition of Property::name() to proper place
+// turning Object::member() into a free-standing function might do the trick (#24)
 template <class Object, typename Value, LabelId Label, FeatureSet Features>
-constexpr const char *Property<Object, Value, Label, Features>::name() noexcept
+constexpr std::string_view Property<Object, Value, Label, Features>::name() noexcept
 {
     // HACK: This lambda is a workaround for MSVC wrongly reporting C7595:
     // 'npropertytest::HelloWorld::member': call to immediate function is not a constant expression

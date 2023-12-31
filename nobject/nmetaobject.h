@@ -132,16 +132,16 @@ protected:
         QMetaObject::activate(this, metaObject, methodIndex, metaCallArgs.data());
     }
 
-    template <auto Property>
-    static consteval auto makeProperty(const char *name) noexcept
+    template<auto Property>
+    static consteval auto makeProperty(std::string_view name) noexcept
     {
-        return detail::MemberInfo::makeProperty<Property>(name);
+        return detail::MemberInfo::makeProperty<Property>(std::move(name));
     }
 
-    static consteval auto makeClassInfo(const char *name, const char *value,
+    static consteval auto makeClassInfo(std::string_view name, std::string_view value,
                                         LabelId label = detail::LineNumber::current()) noexcept
     {
-        return detail::MemberInfo::makeClassInfo(label, name, value);
+        return detail::MemberInfo::makeClassInfo(label, std::move(name), std::move(value));
     }
 
     template <LabelId N>

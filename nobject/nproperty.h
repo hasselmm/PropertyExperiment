@@ -153,7 +153,7 @@ public:
 
     [[nodiscard]] static constexpr TagType tag() noexcept               { return {}; }
     [[nodiscard]] static constexpr LabelId label() noexcept             { return Label; }
-    [[nodiscard]] static constexpr const char *name() noexcept;
+    [[nodiscard]] static constexpr std::string_view name() noexcept;
 
     [[nodiscard]] static constexpr FeatureSet features() noexcept       { return canonical(Features); }
     [[nodiscard]] static constexpr bool hasFeature(Feature f) noexcept  { return features().contains(f); }
