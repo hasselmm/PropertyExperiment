@@ -1,3 +1,5 @@
+#include "backports.h"
+
 #include "aobject/aobjecttest.h"
 #include "mobject/mobjecttest.h"
 #include "nobject/nobjecttest.h"
@@ -100,15 +102,6 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
 /// Simply show an expression and its value.
 ///
 #define SHOW(What) qInfo() << #What " =>" << (What)
-
-
-/// It's really helpful to also know the values of a failing test. Therefore
-/// let's use them, but have primitive fallback versions on older versions of Qt.
-///
-#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
-#define QCOMPARE_LT(Left, Right) QVERIFY((Left) < (Right))
-#define QCOMPARE_GE(Left, Right) QVERIFY((Left) >= (Right))
-#endif
 
 
 /// Some constants for property related tests
