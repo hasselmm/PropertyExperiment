@@ -78,23 +78,12 @@ template<> constexpr auto implementedFeatures<MObjectTest>
       & ~Enumerators
     ;
 
-template<> constexpr auto skippedFeatures<NObjectMacro>
-    = skippedFeatures<>
-      | Enumerators
-    ;
-
-template<> constexpr auto skippedFeatures<NObjectModern>
-    = skippedFeatures<>
-      | Enumerators
-    ;
-
 template<> constexpr auto skippedFeatures<NObjectLegacy>
     = skippedFeatures<>
       | SignalAddresses
       | PropertyChanges
       | PropertyNotifications
       | NotifyPointers
-      | Enumerators
     ;
 
 /// Just a tiny wrapper with simple name for the pretty verbose
@@ -726,6 +715,10 @@ private:
     template <HasFeature<Enumerators> T>
     static void testEnumerators(T &)
     {
+#ifdef NPROPERTY_NMETAENUM_DEBUG
+        qInfo() << nproperty::metaenum::debug::samples();
+#endif // NPROPERTY_NMETAENUM_DEBUG
+
         static_assert(!nproperty::ScopedEnumType<typename T::Error>);
         static_assert( nproperty::ScopedEnumType<typename T::Option>);
 

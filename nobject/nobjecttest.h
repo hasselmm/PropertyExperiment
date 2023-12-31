@@ -39,6 +39,20 @@ class NObjectMacro
     N_CLASSINFO("URL", "https://github.com/hasselmm/PropertyExperiment/")
 
 public:
+    enum Error {
+        NoError,
+        SomeError,
+    };
+
+    N_ENUM(Error)
+
+    enum class Option {
+        First = (1 << 0),
+        Second = (1 << 1),
+    };
+
+    N_FLAG(Option)
+
     using Object::Object;
 
     void modifyNotifying()
@@ -71,6 +85,20 @@ class NObjectModern
     N_OBJECT
 
 public:
+    enum Error {
+        NoError,
+        SomeError,
+    };
+
+    N_ENUM(Error)
+
+    enum class Option {
+        First = (1 << 0),
+        Second = (1 << 1),
+    };
+
+    N_FLAG(Option)
+
     using Object::Object;
 
     void modifyNotifying()
@@ -111,6 +139,20 @@ class NObjectLegacy
     N_OBJECT
 
 public:
+    enum Error {
+        NoError,
+        SomeError,
+    };
+
+    N_ENUM(Error)
+
+    enum class Option {
+        First = (1 << 0),
+        Second = (1 << 1),
+    };
+
+    N_FLAG(Option)
+
     using Object::Object;
 
     void modifyNotifying()

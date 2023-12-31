@@ -144,6 +144,20 @@ protected:
         return detail::MemberInfo::makeClassInfo(label, std::move(name), std::move(value));
     }
 
+    template<EnumType T>
+    static consteval auto makeEnum(LabelId label = detail::LineNumber::current())
+    {
+        constexpr auto type = detail::MemberInfo::enumType<T>();
+        return detail::MemberInfo::makeEnumerator<T, type>(label);
+    }
+
+    template<EnumType T>
+    static consteval auto makeFlag(LabelId label = detail::LineNumber::current())
+    {
+        constexpr auto type = detail::MemberInfo::flagType<T>();
+        return detail::MemberInfo::makeEnumerator<T, type>(label);
+    }
+
     template <LabelId N>
     static constexpr bool hasMember() noexcept
     {

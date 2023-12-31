@@ -303,6 +303,13 @@ const QMetaObject *MetaObjectBuilder::build(const QMetaType          &metaType,
             makeClassInfo(metaObject, member);
             break;
 
+        case MemberInfo::Type::InlineEnum:
+        case MemberInfo::Type::ScopedEnum:
+        case MemberInfo::Type::InlineFlag:
+        case MemberInfo::Type::ScopedFlag:
+            makeEnumerator(metaObject, member);
+            break;
+
         case MemberInfo::Type::Signal:
         case MemberInfo::Type::Interface:
         case MemberInfo::Type::Invalid:
@@ -344,6 +351,19 @@ void MetaObjectBuilder::makeClassInfo(QMetaObjectBuilder &metaObject,
                                       const MemberInfo   &classInfo)
 {
     metaObject.addClassInfo(toByteArray(classInfo.name), toByteArray(classInfo.value));
+}
+
+void MetaObjectBuilder::makeEnumerator(QMetaObjectBuilder &metaObject,
+                                       const MemberInfo   &enumeratorInfo)
+{
+    Q_ASSERT(enumeratorInfo.keys != nullptr);
+
+    auto metaEnumerator = metaObject.addEnumerator(toByteArray(enumeratorInfo.name));
+    metaEnumerator.setIsScoped(enumeratorInfo.isScoped());
+    metaEnumerator.setIsFlag(enumeratorInfo.isFlag());
+
+    for (const auto &[name, value]: enumeratorInfo.keys())
+        metaEnumerator.addKey(toByteArray(name), value);
 }
 
 } // namespace nproperty::detail
