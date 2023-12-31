@@ -1,5 +1,7 @@
 add_library(
     NObjectTest STATIC
+    nconcepts.cpp
+    nconcepts.h
     nlinenumber.cpp
     nlinenumber_p.h
     nmetaobject.cpp

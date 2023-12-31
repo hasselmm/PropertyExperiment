@@ -6,13 +6,6 @@
 
 namespace nproperty {
 
-/// Restrict to classes that are Qt interfaces.
-/// These are abstract classes with a `Q_DECLARE_INTERFACE()` declaration.
-///
-template<class T>
-concept QtInterface = requires { qobject_interface_iid<T *>(); }
-                      && std::is_abstract_v<T>;
-
 template<class ObjectType, class SuperType, QtInterface... Interfaces>
 class Object;
 

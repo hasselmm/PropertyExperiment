@@ -1,6 +1,7 @@
 #ifndef NPROPERTY_NMETAOBJECT_P_H
 #define NPROPERTY_NMETAOBJECT_P_H
 
+#include "nconcepts.h"
 #include "nproperty.h"
 #include "ntypetraits.h"
 
