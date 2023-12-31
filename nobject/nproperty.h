@@ -1,6 +1,7 @@
 #ifndef NPROPERTY_NPROPERTY_H
 #define NPROPERTY_NPROPERTY_H
 
+#include "nmetaenum.h"
 #include "nproperty_p.h"
 #include "ntypetraits.h"
 
@@ -104,7 +105,7 @@ enum class Feature
     Write   = (1 << 3),
 };
 
-using FeatureSet = detail::Flags<Feature>;
+using FeatureSet = detail::metaenum::Flags<Feature>;
 
 constexpr FeatureSet operator|(Feature lhs, Feature rhs) noexcept
 { return FeatureSet{lhs} | rhs; }

@@ -4,6 +4,8 @@ add_library(
     nconcepts.h
     nlinenumber.cpp
     nlinenumber_p.h
+    nmetaenum.cpp
+    nmetaenum.h
     nmetaobject.cpp
     nmetaobject.h
     nmetaobject_p.h
