@@ -83,14 +83,7 @@ private:
     template<typename Interface>
     static void registerInterface(MetaObject *data)
     {
-        const auto iid  = qobject_interface_iid<Interface *>();
-        const auto type = QMetaType::fromType<Interface>();
-        const auto cast = [](QObject *object) {
-            const auto self = static_cast<ObjectType *>(object);
-            return static_cast<void *>(static_cast<Interface *>(self));
-        };
-
-        data->emplace(detail::MemberInfo::makeInterface(type.name(), iid, cast));
+        data->emplace(detail::MemberInfo::makeInterface<Interface, ObjectType>());
     }
 
     static void staticMetaCall(QObject *object, QMetaObject::Call call, int offset, void **args)

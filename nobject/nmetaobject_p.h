@@ -91,15 +91,18 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
         return classInfo;
     }
 
-    static constexpr MemberInfo makeInterface(const char  *name,
-                                              const char   *iid,
-                                              CastFunction cast) noexcept
+    template<QtInterface Interface, std::derived_from<QObject> Object>
+    static constexpr MemberInfo makeInterface() noexcept
     {
         auto interfaceInfo     = MemberInfo{};
-        interfaceInfo.type     = MemberInfo::Type::Interface;
-        interfaceInfo.name     = name;
-        interfaceInfo.value    = iid;
-        interfaceInfo.metacast = cast;
+        interfaceInfo.type     = Type::Interface;
+        interfaceInfo.name     = QMetaType::fromType<Interface>().name();
+        interfaceInfo.value    = qobject_interface_iid<Interface *>();
+        interfaceInfo.metacast = [](QObject *object) {
+            const auto self = static_cast<Object *>(object);
+            return static_cast<void *>(static_cast<Interface *>(self));
+        };
+
         return interfaceInfo;
     }
 
