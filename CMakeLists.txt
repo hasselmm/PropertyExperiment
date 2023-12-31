@@ -126,7 +126,7 @@ install(
 )
 
 add_custom_target(
-    GitHub SOURCES
+    Github SOURCES
     .github/workflows/autotest-clang.yml
     .github/workflows/autotest-gcc.yml
     .github/workflows/autotest-msvc.yml
