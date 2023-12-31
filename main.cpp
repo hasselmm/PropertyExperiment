@@ -91,9 +91,9 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
 
 /// Allow to run templated test function for different types
 ///
-#define MAKE_TESTDATA(TestFunction) \
-    makeTestData<decltype([](auto &object) { \
-        TestFunction(object); \
+#define MAKE_TESTDATA(Feature) \
+    makeTestData<Feature, decltype([](auto &object) { \
+        test##Feature(object); \
     })>()
 
 
@@ -147,38 +147,38 @@ class PropertyExperiment: public QObject
     /// --------------------------------------------------------------------------------------------
 
 private slots:
-    void testMetaObject()                   { runTestFunction(); }
-    void testMetaObject_data()              { MAKE_TESTDATA(testMetaObject); }
+    void testMetaObject()                   { runFeatureTest(); }
+    void testMetaObject_data()              { MAKE_TESTDATA(MetaObject); }
 
-    void testPropertyDefinitions()          { runTestFunction(); }
-    void testPropertyDefinitions_data()     { MAKE_TESTDATA(testPropertyDefinitions); }
+    void testPropertyDefinitions()          { runFeatureTest(); }
+    void testPropertyDefinitions_data()     { MAKE_TESTDATA(PropertyDefinitions); }
 
-    void testUniquePropertyIds()            { runTestFunction(); }
-    void testUniquePropertyIds_data()       { MAKE_TESTDATA(testUniquePropertyIds); }
+    void testUniquePropertyIds()            { runFeatureTest(); }
+    void testUniquePropertyIds_data()       { MAKE_TESTDATA(UniquePropertyIds); }
 
-    void testPropertyAddresses()            { runTestFunction(); }
-    void testPropertyAddresses_data()       { MAKE_TESTDATA(testPropertyAddresses); }
+    void testPropertyAddresses()            { runFeatureTest(); }
+    void testPropertyAddresses_data()       { MAKE_TESTDATA(PropertyAddresses); }
 
-    void testMethodDefinitions()            { runTestFunction(); }
-    void testMethodDefinitions_data()       { MAKE_TESTDATA(testMethodDefinitions); }
+    void testMethodDefinitions()            { runFeatureTest(); }
+    void testMethodDefinitions_data()       { MAKE_TESTDATA(MethodDefinitions); }
 
-    void testSignalAddresses()              { runTestFunction(); }
-    void testSignalAddresses_data()         { MAKE_TESTDATA(testSignalAddresses); }
+    void testSignalAddresses()              { runFeatureTest(); }
+    void testSignalAddresses_data()         { MAKE_TESTDATA(SignalAddresses); }
 
-    void testNotifyPointers()               { runTestFunction(); }
-    void testNotifyPointers_data()          { MAKE_TESTDATA(testNotifyPointers); }
+    void testNotifyPointers()               { runFeatureTest(); }
+    void testNotifyPointers_data()          { MAKE_TESTDATA(NotifyPointers); }
 
-    void testPropertyChanges()              { runTestFunction(); }
-    void testPropertyChanges_data()         { MAKE_TESTDATA(testPropertyChanges); }
+    void testPropertyChanges()              { runBenchmark(); }
+    void testPropertyChanges_data()         { MAKE_TESTDATA(PropertyChanges); }
 
-    void testPropertyNotifications()        { runTestFunction(); }
-    void testPropertyNotifications_data()   { MAKE_TESTDATA(testPropertyNotifications); }
+    void testPropertyNotifications()        { runBenchmark(); }
+    void testPropertyNotifications_data()   { MAKE_TESTDATA(PropertyNotifications); }
 
-    void testClassInfo()                    { runTestFunction(); }
-    void testClassInfo_data()               { MAKE_TESTDATA(testClassInfo); }
+    void testClassInfo()                    { runFeatureTest(); }
+    void testClassInfo_data()               { MAKE_TESTDATA(ClassInfo); }
 
-    void testInterfaces()                   { runTestFunction(); }
-    void testInterfaces_data()              { MAKE_TESTDATA(testInterfaces); }
+    void testInterfaces()                   { runBenchmark(); }
+    void testInterfaces_data()              { MAKE_TESTDATA(Interfaces); }
 
     /// --------------------------------------------------------------------------------------------
     /// An NObject specific test, testing its HelloWorld class and unique features
@@ -307,13 +307,6 @@ private:
         QCOMPARE(sizeof(object.notifyingChanged),      sizeof(char));
     }
 
-    template <class T>
-    static void testMetaObject(T &)
-    {
-        if (isSkippedFeature<MetaObject, T>)
-            QSKIP("Not implemented yet");
-    }
-
     /// --------------------------------------------------------------------------------------------
     /// Verify that the generated properties look like expected.
     /// --------------------------------------------------------------------------------------------
@@ -372,13 +365,6 @@ private:
         QCOMPARE(writable.hasStdCppSet(),        true);
     }
 
-    template <class T>
-    static void testPropertyDefinitions(T &)
-    {
-        if (isSkippedFeature<PropertyDefinitions, T>)
-            QSKIP("Not implemented yet");
-    }
-
     /// --------------------------------------------------------------------------------------------
     /// Verify that properties have unique ids if the type system needs this.
     /// --------------------------------------------------------------------------------------------
@@ -408,13 +394,6 @@ private:
         QCOMPARE(uniqueAddresses.size(), 3);
     }
 
-    template <class T>
-    static void testUniquePropertyIds(T &)
-    {
-        if (isSkippedFeature<UniquePropertyIds, T>)
-            QSKIP("Not implemented yet");
-    }
-
     /// --------------------------------------------------------------------------------------------
     /// Verify that properties have reasonable addresses they can use their signals.
     /// --------------------------------------------------------------------------------------------
@@ -442,13 +421,6 @@ private:
         QCOMPARE(object. constant.object(), &object);
         QCOMPARE(object.notifying.object(), &object);
         QCOMPARE(object. writable.object(), &object);
-    }
-
-    template <class T>
-    static void testPropertyAddresses(T &)
-    {
-        if (isSkippedFeature<PropertyAddresses, T>)
-            QSKIP("Not implemented yet");
     }
 
     /// --------------------------------------------------------------------------------------------
@@ -495,13 +467,6 @@ private:
         QCOMPARE(writableChanged.parameterNames().at(0),              "writable");
     }
 
-    template <class T>
-    static void testMethodDefinitions(T &)
-    {
-        if (isSkippedFeature<MethodDefinitions, T>)
-            QSKIP("Not implemented yet");
-    }
-
     /// --------------------------------------------------------------------------------------------
     /// Verify that signals have reasonable addresses for QObject::connect().
     /// --------------------------------------------------------------------------------------------
@@ -510,13 +475,6 @@ private:
     static void testSignalAddresses(T &)
     {
         QVERIFY(&T::notifyingChanged != &T::writableChanged);
-    }
-
-    template <class T>
-    static void testSignalAddresses(T &)
-    {
-        if (isSkippedFeature<SignalAddresses, T>)
-            QSKIP("Not implemented yet");
     }
 
     /// --------------------------------------------------------------------------------------------
@@ -534,13 +492,6 @@ private:
 
         QCOMPARE(object.notifying.notifyPointer(),  object.notifyingChanged.get());
         QCOMPARE(object.writable .notifyPointer(),  object. writableChanged.get());
-    }
-
-    template <class T>
-    static void testNotifyPointers(T &)
-    {
-        if (isSkippedFeature<NotifyPointers, T>)
-            QSKIP("Not implemented yet");
     }
 
     /// --------------------------------------------------------------------------------------------
@@ -591,13 +542,6 @@ private:
 
         QCOMPARE(object.writable(),             writable3);
         QCOMPARE(object.property("writable"),   writable3);
-    }
-
-    template <class T>
-    static void testPropertyChanges(T &)
-    {
-        if (isSkippedFeature<PropertyChanges, T>)
-            QSKIP("Not implemented yet");
     }
 
     /// --------------------------------------------------------------------------------------------
@@ -701,13 +645,6 @@ private:
         QCOMPARE(writableSpy,                   writableSpy4);
     }
 
-    template <class T>
-    static void testPropertyNotifications(T &)
-    {
-        if (isSkippedFeature<PropertyNotifications, T>)
-            QSKIP("Not implemented yet");
-    }
-
     /// --------------------------------------------------------------------------------------------
     /// Verify that classinfo is generated
     /// --------------------------------------------------------------------------------------------
@@ -721,13 +658,6 @@ private:
         QCOMPARE(metaObject.classInfoOffset(), 0);
         QCOMPARE(metaObject.classInfo(0).name(), "URL");
         QCOMPARE(metaObject.classInfo(0).value(), PROJECT_HOMEPAGE_URL);
-    }
-
-    template <class T>
-    static void testClassInfo(T &)
-    {
-        if (isSkippedFeature<ClassInfo, T>)
-            QSKIP("Not implemented yet");
     }
 
     /// --------------------------------------------------------------------------------------------
@@ -780,13 +710,6 @@ private:
                      ->secondInterfaceCall(), "second");
     }
 
-    template <class T>
-    static void testInterfaces(T &)
-    {
-        if (isSkippedFeature<Interfaces, T>)
-            QSKIP("Not implemented yet");
-    }
-
     /// --------------------------------------------------------------------------------------------
     /// Some support functions to provide same test environment for all property systems.
     /// --------------------------------------------------------------------------------------------
@@ -794,37 +717,67 @@ private:
     using TestFunction = void (*)();
     using TestFunctionPointer = void *;
 
-    void runTestFunction()
+    void runFeatureTest()
     {
         const QFETCH(TestFunctionPointer, testFunctionPointer);
         const auto testFunction = reinterpret_cast<TestFunction>(testFunctionPointer);
+
+        if (testFunction == nullptr)
+            QSKIP("Not implemented yet");
+
         testFunction();
     }
 
-    template<class Delegate>
+    void runBenchmark()
+    {
+        const QFETCH(TestFunctionPointer, testFunctionPointer);
+        const auto testFunction = reinterpret_cast<TestFunction>(testFunctionPointer);
+
+        if (testFunction == nullptr)
+            QSKIP("Not implemented yet");
+
+        QBENCHMARK {
+            for (auto i = 0; i < 1000; ++i)
+                testFunction();
+        }
+    }
+
+    template<Feature feature, class Delegate>
     void makeTestData()
     {
         QTest::addColumn<TestFunctionPointer>("testFunctionPointer");
         QTest::addColumn<QByteArray>         ("expectedClassName");
 
-        makeTestRow<Delegate, AObjectTest>  ("aproperty",        "apropertytest::AObjectTest");
-        makeTestRow<Delegate, MObjectTest>  ("mproperty",        "mpropertytest::MObjectTest");
-        makeTestRow<Delegate, NObjectMacro> ("nproperty:macro",  "npropertytest::NObjectMacro");
-        makeTestRow<Delegate, NObjectModern>("nproperty:modern", "npropertytest::NObjectModern");
-        makeTestRow<Delegate, NObjectLegacy>("nproperty:legacy", "npropertytest::NObjectLegacy");
-        makeTestRow<Delegate, SObjectTest>  ("sproperty",        "spropertytest::SObjectTest");
+        makeTestRow<feature, Delegate, AObjectTest>  ();
+        makeTestRow<feature, Delegate, MObjectTest>  ();
+        makeTestRow<feature, Delegate, NObjectMacro> ();
+        makeTestRow<feature, Delegate, NObjectModern>();
+        makeTestRow<feature, Delegate, NObjectLegacy>();
+        makeTestRow<feature, Delegate, SObjectTest>  ();
     }
 
-    template<typename Delegate, class T>
-    void makeTestRow(const char *tag,
-                     QByteArray  className)
+    template<Feature feature, typename Delegate, class T>
+    void makeTestRow()
     {
-        // GCC fails to wrap template function pointers by QVariant on
-        // Qt 6.2 for MacOS. Actually I am suprised that this worked at all.
-        // So let's just erase the function type to make live easier for GCC.
-        const auto testFunction = &PropertyExperiment::testFunction<Delegate, T>;
-        const auto pointer = reinterpret_cast<TestFunctionPointer>(testFunction);
-        QTest::newRow(tag) << pointer << className;
+        if constexpr (isImplementedFeature<feature, T>) {
+            const auto testFunction = []() -> TestFunctionPointer {
+                if constexpr (!isSkippedFeature<feature, T>) {
+                    // GCC fails to wrap template function pointers by QVariant on
+                    // Qt 6.2 for MacOS. Actually I am suprised that this worked at all.
+                    // So let's just erase the function type to make live easier for GCC.
+                    const auto testFunction = &PropertyExperiment::testFunction<Delegate, T>;
+                    return reinterpret_cast<TestFunctionPointer>(testFunction);
+                }
+
+                return nullptr;
+            }();
+
+            const auto className = T::staticMetaObject.className();
+            const auto tag = std::strrchr(className, ':') + 1;
+            Q_ASSERT((tag - 1) != nullptr && tag[-1] == ':');
+
+            QTest::newRow(tag) << testFunction << QByteArray{className};
+        }
     }
 
     template<class Delegate, class T>
