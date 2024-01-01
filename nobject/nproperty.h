@@ -1,6 +1,7 @@
 #ifndef NPROPERTY_NPROPERTY_H
 #define NPROPERTY_NPROPERTY_H
 
+#include "nmetaenum.h"
 #include "nproperty_p.h"
 #include "ntypetraits.h"
 
@@ -68,6 +69,22 @@ const ClassName::MetaObject ClassName::staticMetaObject = {};
     static consteval auto member(::nproperty::detail::Tag<__LINE__>) \
     { return makeClassInfo((Name), (Value)); }
 
+/// Register an enum-type with the meta-type system.
+/// It's the direct equivalent of `Q_ENUM()`.
+///
+#define N_ENUM(Name) \
+friend constexpr const char *qt_getEnumName(Name) noexcept { return #Name; } \
+    friend constexpr const QMetaObject *qt_getEnumMetaObject(Name) noexcept { return &staticMetaObject; } \
+    static consteval auto member(::nproperty::detail::Tag<__LINE__>) { return makeEnum<Name>(); }
+
+/// Register an flag-style enum-type with the meta-type system.
+/// It's the direct equivalent of `Q_FLAG()`.
+///
+#define N_FLAG(Name) \
+friend constexpr const char *qt_getEnumName(Name) noexcept { return #Name; } \
+    friend constexpr const QMetaObject *qt_getEnumMetaObject(Name) noexcept { return &staticMetaObject; } \
+    static consteval auto member(::nproperty::detail::Tag<__LINE__>) { return makeFlag<Name>(); }
+
 /// This macro provides convenience and pretty syntax when adding new properties
 /// to a NObject.
 ///
@@ -104,7 +121,7 @@ enum class Feature
     Write   = (1 << 3),
 };
 
-using FeatureSet = detail::Flags<Feature>;
+using FeatureSet = metaenum::Flags<Feature>;
 
 constexpr FeatureSet operator|(Feature lhs, Feature rhs) noexcept
 { return FeatureSet{lhs} | rhs; }
@@ -153,7 +170,7 @@ public:
 
     [[nodiscard]] static constexpr TagType tag() noexcept               { return {}; }
     [[nodiscard]] static constexpr LabelId label() noexcept             { return Label; }
-    [[nodiscard]] static constexpr const char *name() noexcept;
+    [[nodiscard]] static constexpr std::string_view name() noexcept;
 
     [[nodiscard]] static constexpr FeatureSet features() noexcept       { return canonical(Features); }
     [[nodiscard]] static constexpr bool hasFeature(Feature f) noexcept  { return features().contains(f); }

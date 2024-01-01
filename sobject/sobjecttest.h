@@ -21,6 +21,20 @@ class SObjectTest
     Q_INTERFACES(experiment::InterfaceOne experiment::InterfaceTwo)
 
 public:
+    enum Error {
+        NoError,
+        SomeError,
+    };
+
+    Q_ENUM(Error)
+
+    enum class Option {
+        First = (1 << 0),
+        Second = (1 << 1),
+    };
+
+    Q_FLAG(Option)
+
     using ParentClass::ParentClass;
 
     QString constant() const;

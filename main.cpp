@@ -1,3 +1,5 @@
+#include "backports.h"
+
 #include "aobject/aobjecttest.h"
 #include "mobject/mobjecttest.h"
 #include "nobject/nobjecttest.h"
@@ -33,6 +35,7 @@ enum Feature
     NotifyPointers          = 1 << 8,
     ClassInfo               = 1 << 9,
     Interfaces              = 1 << 10,
+    Enumerators             = 1 << 11,
 };
 
 /// By default all features are considered enabled, and no features are skipped.
@@ -72,6 +75,7 @@ template<> constexpr auto implementedFeatures<MObjectTest>
     = implementedFeatures<>
       & ~ClassInfo
       & ~Interfaces
+      & ~Enumerators
     ;
 
 template<> constexpr auto skippedFeatures<NObjectLegacy>
@@ -100,15 +104,6 @@ constexpr bool isDataMember = std::is_member_pointer_v<decltype(pointer)>
 /// Simply show an expression and its value.
 ///
 #define SHOW(What) qInfo() << #What " =>" << (What)
-
-
-/// It's really helpful to also know the values of a failing test. Therefore
-/// let's use them, but have primitive fallback versions on older versions of Qt.
-///
-#if QT_VERSION < QT_VERSION_CHECK(6, 4, 0)
-#define QCOMPARE_LT(Left, Right) QVERIFY((Left) < (Right))
-#define QCOMPARE_GE(Left, Right) QVERIFY((Left) >= (Right))
-#endif
 
 
 /// Some constants for property related tests
@@ -179,6 +174,9 @@ private slots:
 
     void testInterfaces()                   { runBenchmark(); }
     void testInterfaces_data()              { MAKE_TESTDATA(Interfaces); }
+
+    void testEnumerators()                  { runFeatureTest(); }
+    void testEnumerators_data()             { MAKE_TESTDATA(Enumerators); }
 
     /// --------------------------------------------------------------------------------------------
     /// An NObject specific test, testing its HelloWorld class and unique features
@@ -708,6 +706,78 @@ private:
                      -> firstInterfaceCall(),  "first");
         QCOMPARE(qobject_cast<experiment::InterfaceTwo *>(&object)
                      ->secondInterfaceCall(), "second");
+    }
+
+    /// --------------------------------------------------------------------------------------------
+    /// Verify that enumerators are generated
+    /// --------------------------------------------------------------------------------------------
+
+    template <HasFeature<Enumerators> T>
+    static void testEnumerators(T &)
+    {
+#ifdef NPROPERTY_NMETAENUM_DEBUG
+        qInfo() << nproperty::metaenum::debug::samples();
+#endif // NPROPERTY_NMETAENUM_DEBUG
+
+        static_assert(!nproperty::ScopedEnumType<typename T::Error>);
+        static_assert( nproperty::ScopedEnumType<typename T::Option>);
+
+        static_assert(QtPrivate::IsQEnumHelper<typename T::Error>::Value);
+        static_assert(QtPrivate::IsQEnumHelper<typename T::Option>::Value);
+
+        const QMetaObject &metaObject = T::staticMetaObject;
+
+        QCOMPARE(metaObject.enumeratorCount(), 2);
+        QCOMPARE(metaObject.enumeratorOffset(), 0);
+
+        const auto errorEnumFromMeta = metaObject.enumerator(0);
+        const auto errorEnumFromType = QMetaEnum::fromType<typename T::Error>();
+
+        QVERIFY (errorEnumFromMeta.isValid());
+        QCOMPARE(errorEnumFromMeta.name(),                    "Error");
+        QCOMPARE(errorEnumFromMeta.enumName(),                "Error");
+        QCOMPARE(errorEnumFromMeta.isFlag(),                    false);
+        QCOMPARE(errorEnumFromMeta.isScoped(),                  false);
+        QCOMPARE(errorEnumFromMeta.keyCount(),                      2);
+        QCOMPARE(errorEnumFromMeta.key(0),                  "NoError");
+        QCOMPARE(errorEnumFromMeta.key(1),                "SomeError");
+        QCOMPARE(errorEnumFromMeta.value(0),               T::NoError);
+        QCOMPARE(errorEnumFromMeta.value(1),             T::SomeError);
+        QCOMPARE(errorEnumFromMeta.value(0),        T::Error::NoError);
+        QCOMPARE(errorEnumFromMeta.value(1),      T::Error::SomeError);
+        QCOMPARE(errorEnumFromMeta.scope(),    metaObject.className());
+        QCOMPARE(errorEnumFromMeta.enclosingMetaObject(), &metaObject);
+
+        QCOMPARE(errorEnumFromMeta.enclosingMetaObject(),
+                 errorEnumFromType.enclosingMetaObject());
+
+        const auto optionEnumFromMeta = metaObject.enumerator(1);
+        const auto optionEnumFromType = QMetaEnum::fromType<typename T::Option>();
+
+        QVERIFY (optionEnumFromMeta.isValid());
+        QCOMPARE(optionEnumFromMeta.name(),                              "Option");
+        QCOMPARE(optionEnumFromMeta.enumName(),                          "Option");
+        QCOMPARE(optionEnumFromMeta.isFlag(),                                true);
+        QCOMPARE(optionEnumFromMeta.isScoped(),                              true);
+        QCOMPARE(optionEnumFromMeta.keyCount(),                                 2);
+        QCOMPARE(optionEnumFromMeta.key(0),                               "First");
+        QCOMPARE(optionEnumFromMeta.key(1),                              "Second");
+        QCOMPARE(optionEnumFromMeta.value(0),  static_cast<int>(T::Option::First));
+        QCOMPARE(optionEnumFromMeta.value(1), static_cast<int>(T::Option::Second));
+        QCOMPARE(optionEnumFromMeta.scope(),               metaObject.className());
+        QCOMPARE(optionEnumFromMeta.enclosingMetaObject(),            &metaObject);
+
+        QCOMPARE(optionEnumFromMeta.enclosingMetaObject(),
+                 optionEnumFromType.enclosingMetaObject());
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+
+        QCOMPARE(errorEnumFromMeta.metaType(),
+                 errorEnumFromType.metaType());
+        QCOMPARE(optionEnumFromMeta.metaType(),
+                 optionEnumFromType.metaType());
+
+#endif
     }
 
     /// --------------------------------------------------------------------------------------------

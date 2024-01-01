@@ -87,6 +87,8 @@ add_subdirectory(sobject)
 
 add_executable(
     PropertyExperiment
+    experiment/backports.cpp
+    experiment/backports.h
     experiment/experiment.cpp
     experiment/experiment.h
     main.cpp
@@ -124,7 +126,7 @@ install(
 )
 
 add_custom_target(
-    GitHub SOURCES
+    Github SOURCES
     .github/workflows/autotest-clang.yml
     .github/workflows/autotest-gcc.yml
     .github/workflows/autotest-msvc.yml

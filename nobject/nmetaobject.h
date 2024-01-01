@@ -6,13 +6,6 @@
 
 namespace nproperty {
 
-/// Restrict to classes that are Qt interfaces.
-/// These are abstract classes with a `Q_DECLARE_INTERFACE()` declaration.
-///
-template<class T>
-concept QtInterface = requires { qobject_interface_iid<T *>(); }
-                      && std::is_abstract_v<T>;
-
 template<class ObjectType, class SuperType, QtInterface... Interfaces>
 class Object;
 
@@ -90,14 +83,7 @@ private:
     template<typename Interface>
     static void registerInterface(MetaObject *data)
     {
-        const auto iid  = qobject_interface_iid<Interface *>();
-        const auto type = QMetaType::fromType<Interface>();
-        const auto cast = [](QObject *object) {
-            const auto self = static_cast<ObjectType *>(object);
-            return static_cast<void *>(static_cast<Interface *>(self));
-        };
-
-        data->emplace(detail::MemberInfo::makeInterface(type.name(), iid, cast));
+        data->emplace(detail::MemberInfo::makeInterface<Interface, ObjectType>());
     }
 
     static void staticMetaCall(QObject *object, QMetaObject::Call call, int offset, void **args)
@@ -146,16 +132,30 @@ protected:
         QMetaObject::activate(this, metaObject, methodIndex, metaCallArgs.data());
     }
 
-    template <auto Property>
-    static consteval auto makeProperty(const char *name) noexcept
+    template<auto Property>
+    static consteval auto makeProperty(std::string_view name) noexcept
     {
-        return detail::MemberInfo::makeProperty<Property>(name);
+        return detail::MemberInfo::makeProperty<Property>(std::move(name));
     }
 
-    static consteval auto makeClassInfo(const char *name, const char *value,
+    static consteval auto makeClassInfo(std::string_view name, std::string_view value,
                                         LabelId label = detail::LineNumber::current()) noexcept
     {
-        return detail::MemberInfo::makeClassInfo(label, name, value);
+        return detail::MemberInfo::makeClassInfo(label, std::move(name), std::move(value));
+    }
+
+    template<EnumType T>
+    static consteval auto makeEnum(LabelId label = detail::LineNumber::current())
+    {
+        constexpr auto type = detail::MemberInfo::enumType<T>();
+        return detail::MemberInfo::makeEnumerator<T, type>(label);
+    }
+
+    template<EnumType T>
+    static consteval auto makeFlag(LabelId label = detail::LineNumber::current())
+    {
+        constexpr auto type = detail::MemberInfo::flagType<T>();
+        return detail::MemberInfo::makeEnumerator<T, type>(label);
     }
 
     template <LabelId N>

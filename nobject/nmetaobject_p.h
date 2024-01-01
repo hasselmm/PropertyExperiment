@@ -1,6 +1,8 @@
 #ifndef NPROPERTY_NMETAOBJECT_P_H
 #define NPROPERTY_NMETAOBJECT_P_H
 
+#include "nconcepts.h"
+#include "nmetaenum.h"
 #include "nproperty.h"
 #include "ntypetraits.h"
 
@@ -10,6 +12,8 @@
 class QMetaObjectBuilder;
 
 namespace nproperty::detail {
+
+using metaenum::KeyInfoArray;
 
 /// Introspection information about class members.
 ///
@@ -21,6 +25,10 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
         ClassInfo,
         Property,
         Signal,
+        InlineEnum,
+        ScopedEnum,
+        InlineFlag,
+        ScopedFlag,
     };
 
     using  OffsetFunction =     quintptr(*)();
@@ -29,11 +37,12 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
     using   ResetFunction =         void(*)(QObject *);
     using PointerFunction = const void *(*)();
     using    CastFunction =       void *(*)(QObject *);
+    using KeyInfoFunction = KeyInfoArray(*)();
 
     consteval MemberInfo() noexcept = default;
 
     template <class Object, typename Value, LabelId Label, FeatureSet Features>
-    consteval MemberInfo(const char *name,
+    consteval MemberInfo(std::string_view        name,
                          OffsetFunction resolveOffset,
                          const Property<Object, Value, Label, Features> * = nullptr) noexcept
         : type{Type::Property}
@@ -64,8 +73,91 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
         }}
     {}
 
+    static constexpr bool isEnumOrFlag(Type type) noexcept
+    {
+        switch (type) {
+        case Type::InlineEnum:
+        case Type::ScopedEnum:
+        case Type::InlineFlag:
+        case Type::ScopedFlag:
+            return true;
+
+        case Type::Invalid:
+        case Type::Interface:
+        case Type::ClassInfo:
+        case Type::Property:
+        case Type::Signal:
+            break;
+        }
+
+        return false;
+    }
+
+    static constexpr bool isFlag(Type type) noexcept
+    {
+        switch (type) {
+        case Type::InlineFlag:
+        case Type::ScopedFlag:
+            return true;
+
+        case Type::Invalid:
+        case Type::Interface:
+        case Type::ClassInfo:
+        case Type::Property:
+        case Type::Signal:
+        case Type::InlineEnum:
+        case Type::ScopedEnum:
+            break;
+        }
+
+        return false;
+    }
+
+    static constexpr bool isScoped(Type type) noexcept
+    {
+        switch (type) {
+        case Type::ScopedEnum:
+        case Type::ScopedFlag:
+            return true;
+
+        case Type::Invalid:
+        case Type::Interface:
+        case Type::ClassInfo:
+        case Type::Property:
+        case Type::Signal:
+        case Type::InlineEnum:
+        case Type::InlineFlag:
+            break;
+        }
+
+        return false;
+    }
+
+    template<EnumType T>
+    static constexpr Type enumType() noexcept
+    {
+        if constexpr (ScopedEnumType<T>) {
+            return Type::ScopedEnum;
+        } else {
+            return Type::InlineEnum;
+        }
+    }
+
+    template<EnumType T>
+    static constexpr Type flagType() noexcept
+    {
+        if constexpr (ScopedEnumType<T>) {
+            return Type::ScopedFlag;
+        } else {
+            return Type::InlineFlag;
+        }
+    }
+
+    constexpr bool isFlag()   const noexcept { return isFlag  (type); }
+    constexpr bool isScoped() const noexcept { return isScoped(type); }
+
     template<auto Property>
-    static consteval MemberInfo makeProperty(const char *name) noexcept
+    static consteval MemberInfo makeProperty(std::string_view name) noexcept
     {
         using Object = typename DataMemberType<Property>::ObjectType;
 
@@ -75,48 +167,65 @@ struct MemberInfo // FIXME: actually this is ObjectInfo, MetaInfo, or the like..
         };
 
         const auto selector = Prototype::null(Property);
-        return MemberInfo{name, resolveOffset, selector};
+        return MemberInfo{std::move(name), resolveOffset, selector};
     }
 
-    static consteval MemberInfo makeClassInfo(LabelId     label,
-                                              const char *name,
-                                              const char *value) noexcept
+    static consteval MemberInfo makeClassInfo(LabelId          label,
+                                              std::string_view name,
+                                              std::string_view value) noexcept
     {
         auto classInfo  = MemberInfo{};
         classInfo.type  = MemberInfo::Type::ClassInfo;
         classInfo.label = label;
-        classInfo.name  = name;
-        classInfo.value = value;
+        classInfo.name  = std::move(name);
+        classInfo.value = std::move(value);
         return classInfo;
     }
 
-    static constexpr MemberInfo makeInterface(const char  *name,
-                                              const char   *iid,
-                                              CastFunction cast) noexcept
+    template<QtInterface Interface, std::derived_from<QObject> Object>
+    static constexpr MemberInfo makeInterface() noexcept
     {
         auto interfaceInfo     = MemberInfo{};
-        interfaceInfo.type     = MemberInfo::Type::Interface;
-        interfaceInfo.name     = name;
-        interfaceInfo.value    = iid;
-        interfaceInfo.metacast = cast;
+        interfaceInfo.type     = Type::Interface;
+        interfaceInfo.name     = QMetaType::fromType<Interface>().name();
+        interfaceInfo.value    = qobject_interface_iid<Interface *>();
+        interfaceInfo.metacast = [](QObject *object) {
+            const auto self = static_cast<Object *>(object);
+            return static_cast<void *>(static_cast<Interface *>(self));
+        };
+
         return interfaceInfo;
+    }
+
+    template<EnumType Enum, MemberInfo::Type type>
+    requires(isEnumOrFlag(type))
+    static constexpr MemberInfo makeEnumerator(LabelId label) noexcept
+    {
+        auto enumeratorInfo  = MemberInfo{};
+        enumeratorInfo.type  = type;
+        enumeratorInfo.label = label;
+        enumeratorInfo.name  = metaenum::name<Enum>(); // QMetaType::fromType<Enum>() is not constexpr
+        enumeratorInfo.keys  = metaenum::keys<Enum, isFlag(type)>;
+
+        return enumeratorInfo;
     }
 
     constexpr explicit operator bool() const noexcept { return type != Type::Invalid; }
 
-    Type            type            = Type::Invalid;
-    int             valueType       = QMetaType::UnknownType;
-    FeatureSet      features        = {};
-    LabelId         label           = 0;
-    const char     *name            = nullptr;
-    const char     *value           = nullptr;
+    Type             type           = Type::Invalid;
+    int              valueType      = QMetaType::UnknownType;
+    FeatureSet       features       = {};
+    LabelId          label          = 0;
+    std::string_view name;
+    std::string_view value;
 
-    OffsetFunction  resolveOffset   = nullptr;
-    ReadFunction    readProperty    = nullptr;
-    WriteFunction   writeProperty   = nullptr;
-    ResetFunction   resetProperty   = nullptr;
-    PointerFunction pointer         = nullptr;
-    CastFunction    metacast        = nullptr;
+    OffsetFunction   resolveOffset  = nullptr;
+    ReadFunction     readProperty   = nullptr;
+    WriteFunction    writeProperty  = nullptr;
+    ResetFunction    resetProperty  = nullptr;
+    PointerFunction  pointer        = nullptr;
+    CastFunction     metacast       = nullptr;
+    KeyInfoFunction  keys           = nullptr;
 };
 
 /// Introspection information about a C++ class that can be used to build a `QMetaObject`.
@@ -131,7 +240,7 @@ public:
 protected:
     void emplace(MemberInfo &&member);
     void metaCall(QObject *object, QMetaObject::Call call, int offset, void **args) const;
-    void *interfaceCast(QObject *object, const char *name) const;
+    void *interfaceCast(QObject *object, std::string_view name) const;
 
     template<class Object, quintptr N>
     static consteval bool hasMember()
@@ -178,8 +287,9 @@ public:
                                                   MetaCallFunction  metaCallFunction);
 
 private:
-    static void makeProperty (QMetaObjectBuilder &metaObject, const MemberInfo &property);
-    static void makeClassInfo(QMetaObjectBuilder &metaObject, const MemberInfo &classInfo);
+    static void makeProperty  (QMetaObjectBuilder &metaObject, const MemberInfo &property);
+    static void makeClassInfo (QMetaObjectBuilder &metaObject, const MemberInfo &classInfo);
+    static void makeEnumerator(QMetaObjectBuilder &metaObject, const MemberInfo &enumeratorInfo);
 };
 
 } // namespace nproperty::detail
@@ -187,8 +297,9 @@ private:
 namespace nproperty {
 
 // FIXME: move definition of Property::name() to proper place
+// turning Object::member() into a free-standing function might do the trick (#24)
 template <class Object, typename Value, LabelId Label, FeatureSet Features>
-constexpr const char *Property<Object, Value, Label, Features>::name() noexcept
+constexpr std::string_view Property<Object, Value, Label, Features>::name() noexcept
 {
     // HACK: This lambda is a workaround for MSVC wrongly reporting C7595:
     // 'npropertytest::HelloWorld::member': call to immediate function is not a constant expression

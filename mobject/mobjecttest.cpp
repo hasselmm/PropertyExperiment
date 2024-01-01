@@ -19,5 +19,3 @@ std::vector<MObjectTest::MetaProperty> MObjectTest::MetaObject::makeProperties()
 namespace mpropertytest {
 M_OBJECT_IMPLEMENTATION(MObjectTest, constant, notifying, writable)
 } // namespace mpropertytest
-
-#include "moc_mobjecttest.cpp"
