@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Show settings
-      run:  echo '${{ toJSON(vars) }}'
+      run:  echo '${{toJSON(vars)}}'
 
   gcc:
     strategy:
@@ -63,11 +63,10 @@ jobs:
       msys2_system:    ${{ matrix.msys2 }}
       platform:        ${{ matrix.platform }}
       qt_version:      ${{ matrix.qt_version }}
-      reporting:       ${{ matrix.platform   == 'ubuntu-latest'
-                        && matrix.qt_version == '6.6.1'
+      reporting:       ${{ matrix.qt_version == '6.6.1'
+                        && matrix.platform   == 'ubuntu-latest'
                         && matrix.compiler   == 'g++'
                         }}
-
 
   reporting:
     needs: gcc

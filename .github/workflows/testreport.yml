@@ -4,24 +4,33 @@ on:
   workflow_call:
     inputs:
       reporting_tool:
-        type:        string
-        required:    true
+        type:       string
+        required:   true
 
       qt_version:
-        type:        string
-        required:    true
+        type:       string
+        required:   true
 
       qt_tools:
-        type:        string
-        required:    true
+        type:       string
+        required:   true
+
+      platform:
+        type:       string
+        required:   false
+        default:    ubuntu-latest
 
 env:
   QT_MESSAGE_PATTERN: >-
     %{if-warning}::warning::%{endif}%{if-critical}::error::%{endif}%{message}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   reporting:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.platform }}
 
     steps:
     - name: Download reporting tool
@@ -45,10 +54,18 @@ jobs:
         tools:   ${{ inputs.qt_tools }}
         cache:   true
 
+    - name: Check prepare reporting tool
+      id:   reporting-tool
+      run: |
+        test $(ls tools/reporting* | wc -l) -eq 1
+        reporting=$(ls tools/reporting*)
+        chmod a+x $reporting
+
+        echo "executable=$reporting" >> $GITHUB_OUTPUT
+
     - name: Process test reports
       run: >-
-        chmod a+x tools/reporting
-        && tools/reporting
+        ${{ steps.reporting-tool.outputs.executable }}
         --autotest-summary=autotests.github
         --autotest-report=autotests.md
         --benchmark-report=benchmarks.md
