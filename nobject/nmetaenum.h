@@ -105,8 +105,11 @@ template<EnumType T, std::size_t Index>
 {
     using U = std::underlying_type_t<T>;
 
-    if constexpr (Index > 0)
-        return (static_cast<U>(1) << static_cast<U>(Index - 1));
+    if constexpr (Index > 0) {
+        const auto shift = Index - 1;
+        static_assert(shift >= 0 && shift < sizeof(T) * 8);
+        return static_cast<U>(U{1} << shift);
+    }
 
     return static_cast<U>(0);
 }
