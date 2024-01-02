@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  autotest:
+  msvc:
     strategy:
       fail-fast: false
 

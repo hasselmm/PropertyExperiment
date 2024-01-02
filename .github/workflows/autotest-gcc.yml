@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  autotest:
+  gcc:
     strategy:
       fail-fast: false
 
