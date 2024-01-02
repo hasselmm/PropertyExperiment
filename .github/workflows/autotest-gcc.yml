@@ -63,3 +63,16 @@ jobs:
       msys2_system:    ${{ matrix.msys2 }}
       platform:        ${{ matrix.platform }}
       qt_version:      ${{ matrix.qt_version }}
+      reporting:       ${{ matrix.platform   == 'ubuntu-latest'
+                        && matrix.qt_version == '6.6.1'
+                        && matrix.compiler   == 'g++'
+                        }}
+
+
+  reporting:
+    needs: gcc
+    uses: ./.github/workflows/testreport.yml
+    with:
+      reporting_tool: reporting-tool-Qt-6.6.1-Linux-g++
+      qt_tools:       tools_ninja
+      qt_version:     6.6.1

@@ -24,7 +24,7 @@ if (CCACHE_EXECUTABLE)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_EXECUTABLE}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Core Test)
+find_package(Qt6 REQUIRED COMPONENTS Core Network Test)
 message(STATUS "Using Qt ${Qt6_VERSION}")
 
 # https://releases.llvm.org/17.0.1/tools/clang/docs/DiagnosticsReference.html
@@ -90,6 +90,8 @@ add_subdirectory(mobject)
 add_subdirectory(nobject)
 add_subdirectory(sobject)
 
+add_subdirectory(reporting)
+
 add_executable(
     PropertyExperiment
     experiment/backports.cpp
@@ -110,11 +112,12 @@ target_link_libraries(
     Qt::Test
 )
 
-option(JUNIT_REPORTS "" NO) # FIXME
 set(TEST_FLAGS)
 
-if (JUNIT_REPORTS)
-    list(APPEND TEST_FLAGS -junitxml -o "$<CONFIG>-junit.xml")
+option(GENERATE_TEST_REPORTS "" NO) 
+
+if (GENERATE_TEST_REPORTS)
+    list(APPEND TEST_FLAGS -lightxml -o "test-report-${VARIANT_ID}-$<CONFIG>.xml")
 endif()
 
 add_compile_definitions(PROJECT_HOMEPAGE_URL="${CMAKE_PROJECT_HOMEPAGE_URL}")
@@ -136,4 +139,5 @@ add_custom_target(
     .github/workflows/autotest-gcc.yml
     .github/workflows/autotest-msvc.yml
     .github/workflows/autotest.yml
+    .github/workflows/testreport.yml
 )
