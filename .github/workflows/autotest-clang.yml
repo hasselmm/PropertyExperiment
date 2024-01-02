@@ -19,8 +19,8 @@ jobs:
 
       matrix:
         platform:   [macos-latest, ubuntu-latest, windows-latest]
-        compiler:   [clang++-14, clang++-15, clang++-16, clang++-17]
         qt_version: [6.2.4, 6.5.3, 6.6.1, msys2]
+        compiler:   [clang++-14, clang++-15, clang++-16, clang++-17]
 
         include:
         - platform:         macos-latest

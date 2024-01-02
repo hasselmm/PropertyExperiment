@@ -19,9 +19,9 @@ jobs:
 
       matrix:
         platform:   [macos-latest, ubuntu-latest, windows-latest]
-        compiler:   [g++, g++-12]
         qt_version: [6.2.4, 6.5.3, 6.6.1, msys2]
         msys2:      ['', 'mingw', 'ucrt']
+        compiler:   [g++, g++-12]
 
         include:
         - platform:   windows-latest

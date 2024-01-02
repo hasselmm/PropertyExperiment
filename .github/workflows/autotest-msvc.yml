@@ -19,8 +19,8 @@ jobs:
 
       matrix:
         platform:   [windows-latest]
-        compiler:   [cl]
         qt_version: [6.2.4, 6.5.3, 6.6.1]
+        compiler:   [cl]
 
     needs: status
     uses: ./.github/workflows/autotest.yml
