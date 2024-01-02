@@ -20,10 +20,6 @@ on:
         type:        string
         required:    true
 
-      msys2_arch:
-        type:        string
-        required:    true
-
       homebrew_path:
         type:        string
         required:    true
@@ -50,9 +46,21 @@ jobs:
     needs: status
 
     steps:
-    - name: "Show inputs"
+    - name: "Identify MSYS2 system"
+      id:    msys2
       shell: bash
-      run: echo '${{toJSON(inputs)}}'
+      run: |
+        msys2='${{ inputs.msys2_system }}'
+
+        if [ "${msys2}" = "mingw64" ]; then
+            echo "arch=x86_64" >> $GITHUB_OUTPUT
+        elif [ -n "${msys2}" ]; then
+            echo "arch=${msys2:0:-2}-x86_64" >> $GITHUB_OUTPUT
+        else
+            echo "arch=" >> $GITHUB_OUTPUT
+        fi
+
+        cat $GITHUB_OUTPUT
 
     - name: "Checkout project"
       uses: actions/checkout@v3
@@ -72,22 +80,23 @@ jobs:
         update: true
         location: D:\
         install: >-
-          mingw-w64-${{inputs.msys2_arch}}-clang
-          mingw-w64-${{inputs.msys2_arch}}-cmake
-          mingw-w64-${{inputs.msys2_arch}}-libc++
-          mingw-w64-${{inputs.msys2_arch}}-libunwind
-          mingw-w64-${{inputs.msys2_arch}}-ninja
-          mingw-w64-${{inputs.msys2_arch}}-qt6-base-debug
-          mingw-w64-${{inputs.msys2_arch}}-qt6-base
+          mingw-w64-${{ steps.msys2.outputs.arch }}-clang
+          mingw-w64-${{ steps.msys2.outputs.arch }}-cmake
+          mingw-w64-${{ steps.msys2.outputs.arch }}-libc++
+          mingw-w64-${{ steps.msys2.outputs.arch }}-libunwind
+          mingw-w64-${{ steps.msys2.outputs.arch }}-ninja
+          mingw-w64-${{ steps.msys2.outputs.arch }}-qt6-base-debug
+          mingw-w64-${{ steps.msys2.outputs.arch }}-qt6-base
 
-    - name: "Install libc++"
-      if:   ${{inputs.platform == 'ubuntu-latest' && inputs.compiler == 'clang++-15'}}
+    - name: Install libc++
+      if:  ${{ inputs.platform == 'ubuntu-latest'
+            && inputs.compiler == 'clang++-15' }}
       shell: bash
       run:   sudo apt install libc++-15-dev libc++abi-15-dev
 
-    - name: Setup environment
+    - name: "Setup environment"
+      id:    buildenv
       shell: bash
-      id: strings
       run: |
         add_path() {
           if [ -n "$1" ]; then
@@ -109,7 +118,9 @@ jobs:
           cat $GITHUB_ENV
         fi
 
-        echo "build-output-dir=${{github.workspace}}/build" >> $GITHUB_OUTPUT
+        echo "build-output-dir=${{ github.workspace }}/build" >> $GITHUB_OUTPUT
+        echo "build-shell=${{ inputs.msys2_system && 'msys2 {0}' || '' }}" >> $GITHUB_OUTPUT
+        echo "build-path=${{ matrix.msys2_system && format('PATH=/{0}/bin', matrix.msys2_system) || '' }}" >> $GITHUB_OUTPUT
 
         echo GITHUB_OUTPUT
         cat $GITHUB_OUTPUT
@@ -134,7 +145,7 @@ jobs:
         --loglevel=VERBOSE
         ${{inputs.compiler != 'cl' && '-G "Ninja Multi-Config"' || ''}}
         -S "${{github.workspace}}"
-        -B "${{steps.strings.outputs.build-output-dir}}"
+        -B "${{steps.buildenv.outputs.build-output-dir}}"
         -D "CMAKE_CONFIGURATION_TYPES:LIST=Debug;MinSizeRel;RelWithDebInfo"
         -D "CMAKE_CXX_COMPILER:STRING=${{inputs.compiler}}"
         -D "CMAKE_CXX_COMPILER_WORKS:BOOL=YES"
@@ -143,15 +154,24 @@ jobs:
 
     - name: Build Debug
       if:   ${{!inputs.msys2_system}}
-      run:  cmake --build "${{steps.strings.outputs.build-output-dir}}" --config Debug
+      run: >
+        cmake
+        --build "${{steps.buildenv.outputs.build-output-dir}}"
+        --config Debug
 
     - name: Build MinSizeRel
-      if:   ${{!inputs.msys2_system}}
-      run:  cmake --build "${{steps.strings.outputs.build-output-dir}}" --config MinSizeRel
+      if:   ${{!inputs.msys2_system }}
+      run: >
+        cmake
+        --build "${{steps.buildenv.outputs.build-output-dir}}"
+        --config MinSizeRel
 
     - name: Build RelWithDebInfo
       if:   ${{!inputs.msys2_system}}
-      run:  cmake --build "${{steps.strings.outputs.build-output-dir}}" --config RelWithDebInfo
+      run: >
+        cmake
+        --build "${{steps.buildenv.outputs.build-output-dir}}"
+        --config RelWithDebInfo
 
 
     - name:  Build Debug using MSYS2
@@ -159,38 +179,44 @@ jobs:
       shell: msys2 {0}
       run: >
         PATH=/${{inputs.msys2_system}}/bin
-        cmake --build "${{steps.strings.outputs.build-output-dir}}" --config Debug
+        cmake
+        --build "${{steps.buildenv.outputs.build-output-dir}}"
+        --config Debug
 
     - name:  Build MinSizeRel using MSYS2
       if:    ${{inputs.msys2_system}}
       shell: msys2 {0}
       run: >
         PATH=/${{inputs.msys2_system}}/bin
-        cmake --build "${{steps.strings.outputs.build-output-dir}}" --config MinSizeRel
+        cmake
+        --build "${{steps.buildenv.outputs.build-output-dir}}"
+        --config MinSizeRel
 
     - name:  Build RelWithDebInfo using MSYS2
       if:    ${{inputs.msys2_system}}
       shell: msys2 {0}
       run: >
         PATH=/${{inputs.msys2_system}}/bin
-        cmake --build "${{steps.strings.outputs.build-output-dir}}" --config RelWithDebInfo
+        cmake
+        --build "${{steps.buildenv.outputs.build-output-dir}}"
+        --config RelWithDebInfo
 
 
     - name: Test Debug
-      working-directory: ${{steps.strings.outputs.build-output-dir}}
+      working-directory: ${{steps.buildenv.outputs.build-output-dir}}
       run: ctest --rerun-failed --output-on-failure --build-config Debug
 
     - name: Test MinSizeRel
-      working-directory: ${{steps.strings.outputs.build-output-dir}}
+      working-directory: ${{steps.buildenv.outputs.build-output-dir}}
       run: ctest --rerun-failed --output-on-failure --build-config MinSizeRel
 
     - name: Test RelWithDebInfo
-      working-directory: ${{steps.strings.outputs.build-output-dir}}
+      working-directory: ${{steps.buildenv.outputs.build-output-dir}}
       run: ctest --rerun-failed --output-on-failure --build-config RelWithDebInfo
 
 
     - name: List build folder
-      working-directory: ${{steps.strings.outputs.build-output-dir}}
+      working-directory: ${{steps.buildenv.outputs.build-output-dir}}
       shell: bash
       run: ls -l
 
@@ -205,4 +231,4 @@ jobs:
       if: failure()
       with:
         name: build-output
-        path: "${{steps.strings.outputs.build-output-dir}}"
+        path: "${{steps.buildenv.outputs.build-output-dir}}"

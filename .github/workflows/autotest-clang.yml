@@ -36,7 +36,6 @@ jobs:
           compiler:         clang++-17
           compiler_command: clang++
           msys2_system:     clang64
-          msys2_arch:       clang-x86_64
           qt_version:       msys2
 
         exclude:
@@ -72,7 +71,6 @@ jobs:
     with:
       compiler:       ${{matrix.compiler_command || matrix.compiler}}
       homebrew_path:  ${{matrix.homebrew_path}}
-      msys2_arch:     ${{matrix.msys2_arch}}
       msys2_system:   ${{matrix.msys2_system}}
       platform:       ${{matrix.platform}}
       qt_version:     ${{matrix.qt_version}}

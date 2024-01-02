@@ -28,7 +28,6 @@ jobs:
     with:
       compiler:       ${{matrix.compiler_command || matrix.compiler}}
       homebrew_path:  ${{matrix.homebrew_path}}
-      msys2_arch:     ${{matrix.msys2_arch}}
       msys2_system:   ${{matrix.msys2_system}}
       platform:       ${{matrix.platform}}
       qt_version:     ${{matrix.qt_version}}
