@@ -46,6 +46,11 @@ codepoetry_add_compile_options(
     CLANG GNU
 )
 
+codepoetry_add_link_options(
+    -fstack-protector
+    CLANG GNU
+)
+
 codepoetry_add_compile_options(
     -Werror=infinite-recursion
     CLANG_MINIMUM_VERSION 15

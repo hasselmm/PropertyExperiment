@@ -19,17 +19,17 @@ jobs:
 
       matrix:
         platform:   [macos-latest, ubuntu-latest, windows-latest]
-        compiler:   [g++, g++-12]
         qt_version: [6.2.4, 6.5.3, 6.6.1, msys2]
-        msys2:      ['', 'mingw', 'ucrt']
+        msys2:      ['', 'mingw64', 'ucrt64']
+        compiler:   [g++, g++-12]
 
         include:
         - platform:   windows-latest
-          msys2:      mingw
+          msys2:      mingw64
           qt_version: msys2
           compiler:   g++
         - platform:   windows-latest
-          msys2:      ucrt
+          msys2:      ucrt64
           qt_version: msys2
           compiler:   g++
 
@@ -37,18 +37,18 @@ jobs:
         - platform:   macos-latest
           qt_version: msys2
         - platform:   macos-latest
-          msys2:      mingw
+          msys2:      mingw64
         - platform:   macos-latest
-          msys2:      ucrt
+          msys2:      ucrt64
         - platform:   macos-latest
           compiler:   g++
 
         - platform:   ubuntu-latest
           qt_version: msys2
         - platform:   ubuntu-latest
-          msys2:      mingw
+          msys2:      mingw64
         - platform:   ubuntu-latest
-          msys2:      ucrt
+          msys2:      ucrt64
         - platform:   ubuntu-latest
           compiler:   g++-12
 
@@ -58,11 +58,8 @@ jobs:
     uses: ./.github/workflows/autotest.yml
     if:   ${{ vars.GCC_ENABLED != '0' }}
     with:
-      compiler:       ${{matrix.compiler}}
-      homebrew_path:  ${{matrix.homebrew_path}}
-      msys2_arch:     ${{(matrix.msys2 == 'mingw' && 'x86_64')
-                       ||(matrix.msys2 && format('{0}-x86_64', matrix.msys2))
-                       || ''}}
-      msys2_system:   ${{matrix.msys2 && format('{0}64',      matrix.msys2) || ''}}
-      platform:       ${{matrix.platform}}
-      qt_version:     ${{matrix.qt_version}}
+      compiler:        ${{ matrix.compiler }}
+      homebrew_path:   ${{ matrix.homebrew_path }}
+      msys2_system:    ${{ matrix.msys2 }}
+      platform:        ${{ matrix.platform }}
+      qt_version:      ${{ matrix.qt_version }}
