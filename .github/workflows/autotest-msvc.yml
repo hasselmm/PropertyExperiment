@@ -7,7 +7,13 @@ on:
     branches: [ "main" ]
 
 jobs:
-  autotest:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Show settings
+      run:  echo '${{toJSON(vars)}}'
+
+  msvc:
     strategy:
       fail-fast: false
 
@@ -16,7 +22,9 @@ jobs:
         compiler:   [cl]
         qt_version: [6.2.4, 6.5.3, 6.6.1]
 
+    needs: status
     uses: ./.github/workflows/autotest.yml
+    if:   ${{ vars.MSVC_ENABLED != '0' }}
     with:
       compiler:       ${{matrix.compiler_command || matrix.compiler}}
       homebrew_path:  ${{matrix.homebrew_path}}

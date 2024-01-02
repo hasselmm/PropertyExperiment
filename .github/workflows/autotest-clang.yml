@@ -7,7 +7,13 @@ on:
     branches: [ "main" ]
 
 jobs:
-  autotest:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Show settings
+      run:  echo '${{toJSON(vars)}}'
+
+  clang:
     strategy:
       fail-fast: false
 
@@ -60,7 +66,9 @@ jobs:
         - platform: windows-latest        # Test with MSYS2 version of Qt only
           compiler: clang++-17
 
+    needs: status
     uses: ./.github/workflows/autotest.yml
+    if:   ${{ vars.CLANG_ENABLED != '0' }}
     with:
       compiler:       ${{matrix.compiler_command || matrix.compiler}}
       homebrew_path:  ${{matrix.homebrew_path}}
