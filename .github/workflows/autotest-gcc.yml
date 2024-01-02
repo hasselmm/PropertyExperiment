@@ -7,6 +7,12 @@ on:
     branches: [ "main" ]
 
 jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Show settings
+      run:  echo '${{ toJSON(vars) }}'
+
   gcc:
     strategy:
       fail-fast: false
@@ -48,7 +54,9 @@ jobs:
 
         - platform:   windows-latest
 
+    needs: status
     uses: ./.github/workflows/autotest.yml
+    if:   ${{ vars.GCC_ENABLED != '0' }}
     with:
       compiler:       ${{matrix.compiler}}
       homebrew_path:  ${{matrix.homebrew_path}}

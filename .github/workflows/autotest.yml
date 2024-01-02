@@ -34,8 +34,20 @@ permissions:
   checks: write
 
 jobs:
-  autotest:
-    runs-on: ${{inputs.platform}}
+  status:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Show parameters
+      run:  echo '${{ toJSON(inputs) }}'
+
+  testing:
+    if: ${{ (startsWith(inputs.platform, 'macos-')   && vars.MACOS_ENABLED   != '0')
+         || (startsWith(inputs.platform, 'ubuntu-')  && vars.LINUX_ENABLED   != '0')
+         || (startsWith(inputs.platform, 'windows-') && vars.WINDOWS_ENABLED != '0')
+         }}
+
+    runs-on: ${{ inputs.platform }}
+    needs: status
 
     steps:
     - name: "Show inputs"
