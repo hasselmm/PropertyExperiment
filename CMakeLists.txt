@@ -139,5 +139,5 @@ add_custom_target(
     .github/workflows/autotest-gcc.yml
     .github/workflows/autotest-msvc.yml
     .github/workflows/autotest.yml
-    .github/workflows/testreport.yml
+    .github/workflows/reporting.yml
 )

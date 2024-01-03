@@ -36,7 +36,7 @@ jobs:
 
   reporting:
     needs: msvc
-    uses: ./.github/workflows/testreport.yml
+    uses: ./.github/workflows/reporting.yml
     with:
       reporting_tool: reporting-tool-Qt-6.6.1-Windows-cl
       platform:       windows-latest
