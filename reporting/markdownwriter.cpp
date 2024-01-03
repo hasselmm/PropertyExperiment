@@ -77,14 +77,27 @@ auto makeUniqueFunctionNames(auto &&range)
     return uniqueValues(std::move(range) | std::views::transform(function<TestFunction>));
 }
 
+QString propertyText(const TestReport *report, const QString &category,
+                     const QString &key, const QString &formatString = {})
+{
+    auto value = report->properties.at(category + u"::"_qs + key);
+
+    if (!formatString.isEmpty())
+        value = formatString.arg(value);
+
+    return value.replace(u' ', u'\u00a0');
+}
+
 auto makeCategoryTitles(const TestReport *report, const std::vector<QString> &categories)
 {
     const auto makeTitle = [report](QString category) {
-        const auto qtVersion = report->properties.at(category + u"::QtVersion"_qs);
-        const auto compiler = report->properties.at(category + u"::Compiler"_qs);
-        const auto config = report->properties.at(category + u"::CMakeConfig"_qs);
-        auto title = compiler + u" Qt\u00a0"_qs + qtVersion + u' ' + config;
-        return std::make_pair(std::move(category), std::move(title));
+        const auto compiler  = propertyText(report, category, u"Compiler"_qs);
+        const auto config    = propertyText(report, category, u"CMakeConfig"_qs);
+        const auto platform  = propertyText(report, category, u"OperatingSystem"_qs);
+        const auto qtVersion = propertyText(report, category, u"QtVersion"_qs, u"Qt %1"_qs);
+
+        const auto title = QList{qtVersion, platform, compiler, config};
+        return std::make_pair(std::move(category), title.join(u' '));
     };
 
     const auto categoryTitlePairs = categories | std::views::transform(makeTitle);
