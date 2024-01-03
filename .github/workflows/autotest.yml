@@ -133,15 +133,6 @@ jobs:
         fi
 
         echo "build-output-dir=${{ github.workspace }}/build" >> $GITHUB_OUTPUT
-        echo "build-shell=${{ inputs.msys2_system && 'msys2 {0}' || '' }}" >> $GITHUB_OUTPUT
-
-        echo "build-path=${{ format(inputs.msys2_system && 'PATH=/{0}/bin' || '',
-                                    inputs.msys2_system)
-                                    }}" >> $GITHUB_OUTPUT
-
-        echo "compiler-id=${{ format(inputs.msys2_system && '{0}-{1}' || '{0}',
-                                     inputs.compiler, inputs.msys2_system)
-                                     }}" >> $GITHUB_OUTPUT
 
         echo GITHUB_OUTPUT
         cat $GITHUB_OUTPUT
@@ -244,11 +235,11 @@ jobs:
         do
             report="test-report-${{steps.variant-id.outputs.value}}-${config}.xml"
 
-            echo "<Environment>"                                                    >> $report
-            echo "    <OperatingSystem>${{ runner.os }}</OperatingSystem>"          >> $report
-            echo "    <CMakeConfig>${config}</CMakeConfig>"                         >> $report
-            echo "    <Compiler>${{steps.buildenv.outputs.compiler-id}}</Compiler>" >> $report
-            echo "</Environment>"                                                   >> $report
+            echo "<Environment>"                                            >> $report
+            echo "    <OperatingSystem>${{ runner.os }}</OperatingSystem>"  >> $report
+            echo "    <CMakeConfig>${config}</CMakeConfig>"                 >> $report
+            echo "    <Compiler>$(< compiler-info.txt)</Compiler>"          >> $report
+            echo "</Environment>"                                           >> $report
         done
 
     - name: List build folder

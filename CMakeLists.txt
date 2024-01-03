@@ -117,6 +117,13 @@ set(TEST_FLAGS)
 option(GENERATE_TEST_REPORTS "" NO) 
 
 if (GENERATE_TEST_REPORTS)
+    set(COMPILER_INFO "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+
+    if (DEFINED ENV{MSYSTEM})
+        string(APPEND COMPILER_INFO " $ENV{MSYSTEM}")
+    endif()
+
+    file(CONFIGURE OUTPUT "compiler-info.txt" CONTENT "${COMPILER_INFO}")
     list(APPEND TEST_FLAGS -lightxml -o "test-report-${VARIANT_ID}-$<CONFIG>.xml")
 endif()
 
