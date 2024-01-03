@@ -131,40 +131,48 @@ bool writeMarkdownBenchmarkReport(const TestReport *report, QIODevice *device)
 
     enum { BenchmarkId, BenchmarkName, DataTag };
 
+    const auto dataTag = [](const auto &p) {
+        return std::get<DataTag>(p);
+    };
+
     for (auto it = taggedBenchmarkNames.begin(); it != taggedBenchmarkNames.end(); ) {
         const auto benchmarkName = std::get<BenchmarkName>(*it);
         const auto isNextBenchmark = [benchmarkName](const auto &tuple) {
             return std::get<BenchmarkName>(tuple) != benchmarkName;
         };
 
-        const auto next  = std::find_if(it, taggedBenchmarkNames.end(), isNextBenchmark);
-        const auto first = std::exchange(it, next);
-        const auto last  = it;
+        const auto next           = std::find_if(it, taggedBenchmarkNames.end(), isNextBenchmark);
+        const auto benchmarkGroup = std::ranges::subrange{std::exchange(it, next), next};
+        const auto dataTagView    = benchmarkGroup | std::views::transform(dataTag);
 
         stream << "## " << benchmarkName << endl;
         stream << endl;
+
+        // Render Mermaid line chart with benchmark results
+        //
         stream << "```mermaid" << endl;
         stream << "xychart-beta" << endl;
         stream << "  title \"" << benchmarkName << '"' << endl;
         stream << "  x-axis [";
 
-        if (auto it = first; it != last) {
-            stream << '"' << std::get<DataTag>(*it) << '"';
+        if (auto dataTag = dataTagView.begin(); dataTag != dataTagView.end()) {
+            stream << '"' << *dataTag << '"';
 
-            while (++it != last)
-                stream << ", \"" << std::get<DataTag>(*it) << '"';
+            while (++dataTag != dataTagView.end())
+                stream << ", \"" << *dataTag << '"';
         }
 
         stream << "]" << endl;
         stream << "  y-axis \"Duration in ms\"" << endl;
 
+        // Chart lines
         for (const auto &cn : categories) {
             stream << "  line [";
 
-            if (auto it = first; it != last) {
+            if (auto it = benchmarkGroup.begin(); it != benchmarkGroup.end()) {
                 stream << measurement(cn, std::get<BenchmarkId>(*it));
 
-                while (++it != last)
+                while (++it != benchmarkGroup.end())
                     stream << ", " << measurement(cn, std::get<BenchmarkId>(*it));
             }
 
@@ -173,10 +181,43 @@ bool writeMarkdownBenchmarkReport(const TestReport *report, QIODevice *device)
 
         stream << "```" << endl;
         stream << endl;
+
+        // Render Markdown table with benchmark results
+        //
+        const auto categoriesTitle = u"Build Configuration"_qs;
+        const auto categoriesWidth = std::max(categoriesTitle.length(),
+                                              maximumLength(categories));
+
+        // Table header
+        stream << "| " << categoriesTitle.leftJustified(categoriesWidth) << " |";
+
+        for (const auto &dataTag : dataTagView)
+            stream << ' ' << dataTag << " |";
+
+        stream << endl;
+        stream << "| " << QString{categoriesWidth, u'-'} << " |";
+
+        for (const auto &dataTag : dataTagView)
+            stream << ' ' << QString{dataTag.length() - 1, u'-'} << ": |";
+
+        stream << endl;
+
+        // Table body
+        for (const auto &cn : categories) {
+            stream << "| " << cn.leftJustified(categoriesWidth) << " |";
+
+            for (const auto &run : benchmarkGroup) {
+                const auto columnWidth = dataTag(run).length();
+                const auto duration = measurement(cn, std::get<BenchmarkId>(run));
+                stream << ' ' << duration.leftJustified(columnWidth) << " |";
+            }
+
+            stream << endl;
+        }
+
+        stream << endl;
     }
 
-    for (const auto &cn : categories)
-        stream << "* " << cn << endl;
 
     return true;
 }
@@ -252,6 +293,7 @@ bool writeMarkdownTestReport(const TestReport *report, QIODevice *device)
     stream << "# Automated Testing Results" << endl;
     stream << endl;
 
+    // FIXME: merge table (header) rendering with writeMarkdownBenchmarkReport()
     stream << "| " << justifyForFunction(u"Functions"_qs);
 
     for (const auto &cn: categories)
