@@ -259,10 +259,10 @@ bool writeMarkdownTestReport(const TestReport *report, QIODevice *device)
     using enum Message::Type;
 
     const auto statuses = std::map<Message::Type, QString> {
-        {Error, u":fire:    error"_qs},
-        {Fail,  u":zap:    failed"_qs},
-        {Skip,  u":zzz:   skipped"_qs},
-        {Pass,  u"&#x2714; passed"_qs} // ":heavy_check_mark:" is pretty long!
+        {Error, u"\U0001F4A5 error"_qs},    // C++23: \N{COLLISION SYMBOL}
+        {Fail,  u"\U000026A1 failed"_qs},   // C++23: \N{HIGH VOLTAGE SIGN}
+        {Skip,  u"\U0001F4A4 skipped"_qs},  // C++23: \N{SLEEPING SYMBOL}
+        {Pass,  u"\U00002714 passed"_qs}    // C++23: \N{HEAVY CHECK MARK}
     };
 
     auto functions = report->functions | std::views::transform(categorize);
