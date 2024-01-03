@@ -115,11 +115,6 @@ bool writeMarkdownBenchmarkReport(const TestReport *report, QIODevice *device)
     const auto uniqueBenchmarkNames = makeUniqueFunctionNames(benchmarks);
     const auto taggedBenchmarkNames = uniqueBenchmarkNames | std::views::transform(extractDataTag);
 
-    const auto endDiagramBlock = [](QTextStream &stream) {
-        stream << "```" << endl;
-        stream << endl;
-    };
-
     const auto measurement = [&results](const auto &cn, const auto &bn) {
         const auto it = results.find({cn, bn});
 
@@ -129,7 +124,6 @@ bool writeMarkdownBenchmarkReport(const TestReport *report, QIODevice *device)
         return it->second->benchmarks.front().value;
     };
 
-    auto previousBenchmarkName = QString{};
     auto stream = QTextStream{device};
 
     stream << "# Benchmark Results" << endl;
@@ -147,29 +141,22 @@ bool writeMarkdownBenchmarkReport(const TestReport *report, QIODevice *device)
         const auto first = std::exchange(it, next);
         const auto last  = it;
 
-        if (benchmarkName != previousBenchmarkName) {
-            if (!previousBenchmarkName.isEmpty())
-                endDiagramBlock(stream);
+        stream << "## " << benchmarkName << endl;
+        stream << endl;
+        stream << "```mermaid" << endl;
+        stream << "xychart-beta" << endl;
+        stream << "  title \"" << benchmarkName << '"' << endl;
+        stream << "  x-axis [";
 
-            previousBenchmarkName = benchmarkName;
+        if (auto it = first; it != last) {
+            stream << '"' << std::get<DataTag>(*it) << '"';
 
-            stream << "## " << benchmarkName << endl;
-            stream << endl;
-            stream << "```mermaid" << endl;
-            stream << "xychart-beta" << endl;
-            stream << "  title \"" << benchmarkName << '"' << endl;
-            stream << "  x-axis [";
-
-            if (auto it = first; it != last) {
-                stream << '"' << std::get<DataTag>(*it) << '"';
-
-                while (++it != last)
-                    stream << ", \"" << std::get<DataTag>(*it) << '"';
-            }
-
-            stream << "]" << endl;
-            stream << "  y-axis \"Duration in ms\"" << endl;
+            while (++it != last)
+                stream << ", \"" << std::get<DataTag>(*it) << '"';
         }
+
+        stream << "]" << endl;
+        stream << "  y-axis \"Duration in ms\"" << endl;
 
         for (const auto &cn : categories) {
             stream << "  line [";
@@ -183,10 +170,10 @@ bool writeMarkdownBenchmarkReport(const TestReport *report, QIODevice *device)
 
             stream << "]" << endl;
         }
-    }
 
-    if (!previousBenchmarkName.isEmpty())
-        endDiagramBlock(stream);
+        stream << "```" << endl;
+        stream << endl;
+    }
 
     for (const auto &cn : categories)
         stream << "* " << cn << endl;
