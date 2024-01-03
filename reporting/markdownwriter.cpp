@@ -1,5 +1,7 @@
 #include "markdownwriter.h"
 
+#include "markup.h"
+
 #include <QFile>
 #include <QLoggingCategory>
 
@@ -13,23 +15,34 @@ Q_LOGGING_CATEGORY(lcMarkdownWriter, "reporting.markdownwriter")
 
 using Qt::endl;
 
-auto bold(QStringView text)
+using std::ranges::begin;
+using std::ranges::end;
+
+// FIXME: workaround for old Clang versions without std::views::values
+const auto values = std::views::transform([](const auto &pair) {
+    return pair.second;
+});
+
+/// Convert the given `range` into a `QList`. This is useful to move implementations
+/// out of the header: Ranges make intensive use of templates, and therefore mandate
+/// inefficient header-only libraries. Well, or modules (maybe).
+///
+template<std::ranges::range Range, typename T = std::ranges::range_value_t<Range>>
+QList<T> toList(Range &&range)
 {
-    return u"**"_qs + text.toString() + u"**"_qs;
+    return {begin(range), end(range)};
 }
 
-auto length(QStringView text)
-{
-    return text.length();
-}
-
-auto maximumLength(const auto &range)
-{
-    return std::ranges::max(range | std::views::transform(length));
-}
-
+/// Categorize test functions by splitting up the function names into their namespace
+/// or class part, and their function. When merging test reports, we use the prefix
+/// to track the origin of a test result. FIXME: We should just add an `origin`
+/// field to `TestFunction`.
+///
 template<typename T>
 using Categorized = std::pair<std::pair<QString, QString>, const T *>;
+
+template<typename T>
+using CategorizedMap = std::map<std::pair<QString, QString>, const T *>;
 
 auto categorize(const TestFunction &function)
 {
@@ -51,13 +64,13 @@ auto function(const Categorized<T> &p)
 }
 
 template<std::forward_iterator Iterator, typename T = typename Iterator::value_type>
-std::vector<T> uniqueValues(Iterator first, Iterator last)
+QList<T> uniqueValues(Iterator first, Iterator last)
 {
-    auto values = std::vector<T>{first, last};
+    auto values = QList<T>{first, last};
 
     std::ranges::sort(values);
     const auto tail = std::ranges::unique(values);
-    values.erase(tail.begin(), tail.end());
+    values.erase(begin(tail), end(tail));
 
     return values;
 }
@@ -88,153 +101,249 @@ QString propertyText(const TestReport *report, const QString &category,
     return value.replace(u' ', u'\u00a0');
 }
 
-auto makeCategoryTitles(const TestReport *report, const std::vector<QString> &categories)
+auto makeCategoryTitles(const TestReport *report, const QList<QString> &categories)
 {
     const auto makeTitle = [report](QString category) {
         const auto compiler  = propertyText(report, category, u"Compiler"_qs);
         const auto config    = propertyText(report, category, u"CMakeConfig"_qs);
         const auto platform  = propertyText(report, category, u"OperatingSystem"_qs);
         const auto qtVersion = propertyText(report, category, u"QtVersion"_qs, u"Qt %1"_qs);
+        const auto title     = QList{qtVersion, platform, compiler, config}.join(u' ');
 
-        const auto title = QList{qtVersion, platform, compiler, config};
-        return std::make_pair(std::move(category), title.join(u' '));
+        return std::make_pair(category, title);
     };
 
-    const auto categoryTitlePairs = categories | std::views::transform(makeTitle);
-    return std::map{categoryTitlePairs.begin(), categoryTitlePairs.end()};
+    return categories | std::views::transform(makeTitle);
+}
+
+struct BenchmarkLabel
+{
+    QString id;
+    QString name;
+    QString dataTag;
+};
+
+BenchmarkLabel makeBenchmarkLabel(const QString &functionName)
+{
+    if (const auto i = functionName.indexOf(u'(');
+        i > 0 && functionName.endsWith(u')')) {
+        auto dataTag = functionName.mid(i + 1, functionName.length() - i  - 2);
+        return {functionName, functionName.left(i - 1), std::move(dataTag)};
+    }
+
+    return {functionName, functionName, {}};
+}
+
+auto toDataTag(const BenchmarkLabel &label)
+{
+    return label.dataTag;
+}
+
+QString benchmarkResult(const CategorizedMap<TestFunction> &results,
+                        const QString                      &categoryName,
+                        const QString                      &benchmarkId)
+{
+    const auto it = results.find({categoryName, benchmarkId});
+
+    if (it == results.cend())
+        return QString{};
+
+    return it->second->benchmarks.front().value;
+}
+
+/// Write benchmark results as Mermaid diagram embedded in a Markdown code block.
+///
+void writeBenchmarkChart(QTextStream &stream,
+                         const auto  &results,
+                         const auto  &categories,
+                         const auto  &dataTags,
+                         const auto  &benchmarkGroup)
+{
+    stream << "```mermaid" << endl;
+    stream << "xychart-beta" << endl;
+    stream << mermaid::Title{benchmarkGroup.front().name} << endl;
+    stream << mermaid::XAxis{dataTags} << endl;
+    stream << mermaid::YAxis{u"Duration in ms"} << endl;
+
+    // Chart lines
+    for (const auto &cn : categories) {
+        const auto result = [cn, &results](const auto &label) {
+            return benchmarkResult(results, cn, label.id);
+        };
+
+        stream << mermaid::Line{benchmarkGroup | std::views::transform(result)} << endl;
+    }
+
+    stream << "```" << endl;
+    stream << endl;
+}
+
+/// Write benchmark results as a Markdown table.
+///
+void writeBenchmarkTable(QTextStream &stream,
+                         const auto  &results,
+                         const auto  &categories,
+                         const auto  &dataTags,
+                         const auto  &benchmarkGroup)
+{
+    auto header = TableHeader{{u"Build Configuration"_qs}};
+    header.updateColumnWidth(0, toList(categories | values));
+    header.addColumns(dataTags, Qt::AlignRight);
+
+    stream << header << endl;
+
+    for (const auto &[name, title] : categories) {
+        const auto makeResult = [&](int i) {
+            auto result = benchmarkResult(results, name, benchmarkGroup[i].id);
+
+            if (const auto dot = result.indexOf(u'.'); dot >= 0) // align by dot
+                result = result.leftJustified(dot + 7).replace(u' ', u'\u00A0');
+
+            return header.columns.at(i + 1).alignText(std::move(result));
+        };
+
+        auto row = std::vector{header.columns[0].alignText(title)};
+        std::ranges::transform(std::views::iota(0, std::ranges::ssize(benchmarkGroup)),
+                               std::back_inserter(row), makeResult);
+        stream << TableRow{std::move(row)} << endl;
+    }
+
+    stream << endl;
 }
 
 } // namespace
 
+/// Write a benchmark `report` in Markdown format to `device`.
+/// Returns `true` on success.
+///
 bool writeMarkdownBenchmarkReport(const TestReport *report, QIODevice *device)
 {
-    const auto extractDataTag = [](const QString &functionName) {
-        if (const auto i = functionName.indexOf(u'(');
-            i > 0 && functionName.endsWith(u')')) {
-            auto dataTag = functionName.mid(i + 1, functionName.length() - i  - 2);
-            return std::make_tuple(functionName, functionName.left(i - 1), std::move(dataTag));
-        } else {
-            return std::make_tuple(functionName, functionName, QString{});
-        }
-    };
-
+    // First extract the benchmark reports from `TestReport`.
+    //
     auto benchmarks = report->functions
                       | std::views::filter(functional::hasBenchmarks)
                       | std::views::transform(categorize);
 
-    const auto results              = std::map{benchmarks.begin(), benchmarks.end()};
-    const auto categories           = makeUniqueCategories(benchmarks);
-    const auto categoryTitles       = makeCategoryTitles(report, categories);
-    const auto uniqueBenchmarkNames = makeUniqueFunctionNames(benchmarks);
-    const auto taggedBenchmarkNames = uniqueBenchmarkNames | std::views::transform(extractDataTag);
+    const auto results             = std::map{begin(benchmarks), end(benchmarks)};
+    const auto categories          = makeUniqueCategories(benchmarks);
+    const auto categoriesWithTitle = makeCategoryTitles(report, categories);
+    const auto benchmarkNames      = makeUniqueFunctionNames(benchmarks);
+    const auto benchmarkLabels     = benchmarkNames | std::views::transform(makeBenchmarkLabel);
 
-    const auto measurement = [&results](const auto &cn, const auto &bn) {
-        const auto it = results.find({cn, bn});
-
-        if (it == results.cend())
-            return QString{};
-
-        return it->second->benchmarks.front().value;
-    };
-
+    // Start writing the report...
+    //
     auto stream = QTextStream{device};
 
-    stream << "# Benchmark Results" << endl;
+    stream << Headline1{u"Benchmark Results"} << endl;
     stream << endl;
 
-    enum { BenchmarkId, BenchmarkName, DataTag };
+    for (auto it = begin(benchmarkLabels); it != end(benchmarkLabels); ) {
+        const auto currentBenchmarkName = (*it).name;
 
-    const auto dataTag = [](const auto &p) {
-        return std::get<DataTag>(p);
-    };
-
-    for (auto it = taggedBenchmarkNames.begin(); it != taggedBenchmarkNames.end(); ) {
-        const auto benchmarkName = std::get<BenchmarkName>(*it);
-        const auto isNextBenchmark = [benchmarkName](const auto &tuple) {
-            return std::get<BenchmarkName>(tuple) != benchmarkName;
+        const auto isNextBenchmark = [currentBenchmarkName](const auto &label) {
+            return label.name != currentBenchmarkName;
         };
 
-        const auto next           = std::find_if(it, taggedBenchmarkNames.end(), isNextBenchmark);
+        // Group benchmarks with same function name, but different data tag.
+        //
+        const auto next           = std::find_if(it, end(benchmarkLabels), isNextBenchmark);
         const auto benchmarkGroup = std::ranges::subrange{std::exchange(it, next), next};
-        const auto dataTagView    = benchmarkGroup | std::views::transform(dataTag);
+        const auto dataTagView    = benchmarkGroup | std::views::transform(toDataTag);
+        const auto dataTags       = toList(dataTagView);
 
-        stream << "## " << benchmarkName << endl;
-        stream << endl;
-
-        // Render Mermaid line chart with benchmark results
+        // Generate charts and results table for the currently found benchmark group.
         //
-        stream << "```mermaid" << endl;
-        stream << "xychart-beta" << endl;
-        stream << "  title \"" << benchmarkName << '"' << endl;
-        stream << "  x-axis [";
-
-        if (auto dataTag = dataTagView.begin(); dataTag != dataTagView.end()) {
-            stream << '"' << *dataTag << '"';
-
-            while (++dataTag != dataTagView.end())
-                stream << ", \"" << *dataTag << '"';
-        }
-
-        stream << "]" << endl;
-        stream << "  y-axis \"Duration in ms\"" << endl;
-
-        // Chart lines
-        for (const auto &cn : categories) {
-            stream << "  line [";
-
-            if (auto it = benchmarkGroup.begin(); it != benchmarkGroup.end()) {
-                stream << measurement(cn, std::get<BenchmarkId>(*it));
-
-                while (++it != benchmarkGroup.end())
-                    stream << ", " << measurement(cn, std::get<BenchmarkId>(*it));
-            }
-
-            stream << "]" << endl;
-        }
-
-        stream << "```" << endl;
+        stream << Headline2{currentBenchmarkName} << endl;
         stream << endl;
 
-        // Render Markdown table with benchmark results
-        //
-        const auto categoriesTitle = u"Build Configuration"_qs;
-        const auto categoriesWidth = std::max(categoriesTitle.length(),
-                                              maximumLength(categories));
-
-        // Table header
-        stream << "| " << categoriesTitle.leftJustified(categoriesWidth) << " |";
-
-        for (const auto &dataTag : dataTagView)
-            stream << ' ' << dataTag << " |";
-
-        stream << endl;
-        stream << "| " << QString{categoriesWidth, u'-'} << " |";
-
-        for (const auto &dataTag : dataTagView)
-            stream << ' ' << QString{dataTag.length() - 1, u'-'} << ": |";
-
-        stream << endl;
-
-        // Table body
-        for (const auto &cn : categories) {
-            stream << "| " << cn.leftJustified(categoriesWidth) << " |";
-
-            for (const auto &run : benchmarkGroup) {
-                const auto columnWidth = dataTag(run).length();
-                const auto duration = measurement(cn, std::get<BenchmarkId>(run));
-                stream << ' ' << duration.leftJustified(columnWidth) << " |";
-            }
-
-            stream << endl;
-        }
-
-        stream << endl;
+        writeBenchmarkChart(stream, results, categories,          dataTags, benchmarkGroup);
+        writeBenchmarkTable(stream, results, categoriesWithTitle, dataTags, benchmarkGroup);
     }
-
 
     return true;
 }
 
+/// Write a test `report` in Markdown format to `device`.
+/// Returns `true` on success.
+///
+bool writeMarkdownTestReport(const TestReport *report, QIODevice *device)
+{
+    using enum Message::Type;
+
+    const auto statusLabels = std::map<Message::Type, QString> {
+        {Error, u"\U0001F4A5 error"_qs},    // C++23: \N{COLLISION SYMBOL}
+        {Fail,  u"\U000026A1 failed"_qs},   // C++23: \N{HIGH VOLTAGE SIGN}
+        {Skip,  u"\U0001F4A4 skipped"_qs},  // C++23: \N{SLEEPING SYMBOL}
+        {Pass,  u"\U00002714 passed"_qs}    // C++23: \N{HEAVY CHECK MARK}
+    };
+
+    auto functions = report->functions | std::views::transform(categorize);
+
+    const auto results        = std::map{begin(functions), end(functions)};
+    const auto categories     = makeUniqueCategories(functions);
+    const auto categoryTitles = makeCategoryTitles(report, categories);
+    const auto functionNames  = makeUniqueFunctionNames(functions);
+
+    auto stream = QTextStream{device};
+
+    stream << Headline1{u"Automated Testing Results"} << endl
+           << endl;
+
+    auto header = TableHeader{{u"Function"_qs}};
+    header.updateColumnWidth(0, functionNames);
+    header.addColumns(toList(categoryTitles | values), Qt::AlignCenter);
+
+    stream << header << endl;
+
+    // Report results for each function.
+    //
+    for (const auto &fn : functionNames) {
+        auto row = std::vector{header.columns[0].alignText(fn)};
+
+        for (auto i : std::views::iota(0, std::ranges::ssize(categories))) {
+            const auto test = results.at({categories.at(i), fn});
+            auto status = QString{};
+
+            if (messageCount(functional::isError)(*test) > 0)
+                status = statusLabels.at(Error);
+            else if (messageCount(functional::isFail)(*test) > 0)
+                status = statusLabels.at(Fail);
+            else if (messageCount(functional::isSkip)(*test) > 0)
+                status = statusLabels.at(Skip);
+            else if (messageCount(functional::isPass)(*test) > 0)
+                status = statusLabels.at(Pass);
+
+            row.emplace_back(header.columns[i + 1].alignText(status));
+        }
+
+        stream << TableRow{std::move(row)} << endl;
+    }
+
+    // Produce the summary rows.
+    //
+    for (const auto &[type, name]: statusLabels) {
+        const auto countMessages = messageCount(functional::hasType(type));
+        auto row = std::vector{header.columns[0].alignText(name)};
+
+        for (auto i : std::views::iota(0, std::ranges::ssize(categories))) {
+            const auto &cn = categories.at(i);
+            const auto messageForType = [cn, countMessages](const Categorized<TestFunction> &f) {
+                return category(f) == cn && countMessages(*f.second) > 0;
+            };
+
+            const auto count = std::ranges::count_if(results, messageForType);
+            row.emplace_back(header.columns[i + 1].alignText(QString::number(count)));
+        }
+
+        stream << TableRow{std::move(row)} << endl;
+    }
+
+    return true;
+}
+
+/// Write a benchmark `report` in Markdown format to `fileName`.
+/// Returns `true` on success.
+///
 bool writeMarkdownBenchmarkReport(const TestReport *report, QStringView fileName)
 {
     auto file = QFile{fileName.toString()};
@@ -254,116 +363,9 @@ bool writeMarkdownBenchmarkReport(const TestReport *report, QStringView fileName
     return writeMarkdownBenchmarkReport(report, &file);
 }
 
-bool writeMarkdownTestReport(const TestReport *report, QIODevice *device)
-{
-    using enum Message::Type;
-
-    const auto statuses = std::map<Message::Type, QString> {
-        {Error, u"\U0001F4A5 error"_qs},    // C++23: \N{COLLISION SYMBOL}
-        {Fail,  u"\U000026A1 failed"_qs},   // C++23: \N{HIGH VOLTAGE SIGN}
-        {Skip,  u"\U0001F4A4 skipped"_qs},  // C++23: \N{SLEEPING SYMBOL}
-        {Pass,  u"\U00002714 passed"_qs}    // C++23: \N{HEAVY CHECK MARK}
-    };
-
-    auto functions = report->functions | std::views::transform(categorize);
-
-    const auto results        = std::map{functions.begin(), functions.end()};
-    const auto categories     = makeUniqueCategories(functions);
-    const auto categoryTitles = makeCategoryTitles(report, categories);
-    const auto functionNames  = makeUniqueFunctionNames(functions);
-
-    // FIXME: workaround for old Clang versions without std::views::values
-    const auto values = std::views::transform([](const auto &pair) {
-        return pair.second;
-    });
-
-    const auto functionsWidth = maximumLength(functionNames);
-    const auto resultsWidth  = maximumLength(statuses | values);
-
-    const auto justifyForFunction = [functionsWidth](const QString &text) {
-        return text.leftJustified(functionsWidth);
-    };
-
-    const auto justifyForCategory = [=](const QString &category, const QString &text) {
-        return text.leftJustified(std::max(categoryTitles.at(category).length(), resultsWidth));
-    };
-
-    const auto rightJustifyForCategory = [=](const QString &category, const QString &text) {
-        return text.rightJustified(std::max(categoryTitles.at(category).length(), resultsWidth));
-    };
-
-    const auto fillForCategory = [=](const QString &category, Qt::Alignment alignment) {
-        auto text = QString{std::max(categoryTitles.at(category).length(), resultsWidth), u'-'};
-
-        if (alignment & Qt::AlignHCenter)
-            text.front() = text.back() = u':';
-
-        return text;
-    };
-
-    auto stream = QTextStream{device};
-
-    stream << "# Automated Testing Results" << endl;
-    stream << endl;
-
-    // FIXME: merge table (header) rendering with writeMarkdownBenchmarkReport()
-    stream << "| " << justifyForFunction(u"Functions"_qs);
-
-    for (const auto &cn: categories)
-        stream << " | " << justifyForCategory(cn, categoryTitles.at(cn));
-
-    stream << " |" << endl;
-
-    stream << "| " << QString{functionsWidth, u'-'};
-
-    for (const auto &cn: categories)
-        stream << " | " << fillForCategory(cn, Qt::AlignCenter);
-
-    stream << " |" << endl;
-
-    for (const auto &fn: functionNames) {
-        stream << "| " << justifyForFunction(fn);
-
-        for (const auto &cn: categories) {
-            const auto test = results.at({cn, fn});
-
-            stream << " | ";
-
-            if (messageCount(functional::isError)(*test) > 0)
-                stream << justifyForCategory(cn, statuses.at(Error));
-            else if (messageCount(functional::isFail)(*test) > 0)
-                stream << justifyForCategory(cn, statuses.at(Fail));
-            else if (messageCount(functional::isSkip)(*test) > 0)
-                stream << justifyForCategory(cn, statuses.at(Skip));
-            else if (messageCount(functional::isPass)(*test) > 0)
-                stream << justifyForCategory(cn, statuses.at(Pass));
-            else
-                stream << justifyForCategory(cn, {});
-        }
-
-        stream << " |" << endl;
-    }
-
-    for (const auto &[type, name]: statuses) {
-        const auto countMessages = messageCount(functional::hasType(type));
-
-        stream << "| " << justifyForFunction(bold(name));
-
-        for (const auto &cn: categories) {
-            const auto messageForType = [cn, countMessages](const Categorized<TestFunction> &f) {
-                return category(f) == cn && countMessages(*f.second) > 0;
-            };
-
-            const auto count = std::ranges::count_if(results, messageForType);
-            stream << " | " << rightJustifyForCategory(cn, QString::number(count));
-        }
-
-        stream << " |" << endl;
-    }
-
-    return true;
-}
-
+/// Write a test `report` in Markdown format to `fileName`.
+/// Returns `true` on success.
+///
 bool writeMarkdownTestReport(const TestReport *report, QStringView fileName)
 {
     auto file = QFile{fileName.toString()};
