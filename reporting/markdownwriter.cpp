@@ -246,10 +246,10 @@ bool writeMarkdownTestReport(const TestReport *report, QIODevice *device)
     using enum Message::Type;
 
     const auto statuses = std::map<Message::Type, QString> {
-        {Error, u":fire:  error"_qs},
-        {Fail,  u":zap:   failed"_qs},
-        {Skip,  u":ghost: skipped"_qs},
-        {Pass,  u":heart: passed"_qs}
+        {Error, u":fire:    error"_qs},
+        {Fail,  u":zap:    failed"_qs},
+        {Skip,  u":zzz:   skipped"_qs},
+        {Pass,  u"&#x2714; passed"_qs} // ":heavy_check_mark:" is pretty long!
     };
 
     auto functions = report->functions | std::views::transform(categorize);
