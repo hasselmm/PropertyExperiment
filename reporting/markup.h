@@ -61,8 +61,8 @@ struct Sequence
     {}
 
     Sequence(Range &&range) noexcept
-        : first{std::begin(range)}
-        , last{std::end(range)}
+        : first{std::ranges::begin(range)}
+        , last{std::ranges::end(range)}
     {}
 
     friend QTextStream &operator<<(QTextStream &stream, const Sequence<T, Range> &sequence)
