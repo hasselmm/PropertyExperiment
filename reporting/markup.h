@@ -10,9 +10,9 @@
 namespace reporting {
 namespace markup::detail {
 
-template<typename T, T> constexpr auto prefix = QStringView{};
-template<typename T, T> constexpr auto joiner = QStringView{};
-template<typename T, T> constexpr auto suffix = QStringView{};
+template<typename T, T> inline constexpr auto prefix = QStringView{};
+template<typename T, T> inline constexpr auto joiner = QStringView{};
+template<typename T, T> inline constexpr auto suffix = QStringView{};
 
 template<auto T>
 struct Fragment
@@ -121,13 +121,21 @@ REPORTING_MARKUP_DECLARE_SEQUENCE(TableRow)
 } // namespace markdown
 
 namespace markup::detail {
-template<> constexpr auto prefix<markdown::detail::FragmentType, markdown::detail::Headline1> = QStringView{u"# "};
-template<> constexpr auto prefix<markdown::detail::FragmentType, markdown::detail::Headline2> = QStringView{u"## "};
-template<> constexpr auto prefix<markdown::detail::FragmentType, markdown::detail::Bold>      = QStringView{u"**"};
-template<> constexpr auto suffix<markdown::detail::FragmentType, markdown::detail::Bold>      = QStringView{u"**"};
-template<> constexpr auto prefix<markdown::detail::SequenceType, markdown::detail::TableRow>  = QStringView{u"| "};
-template<> constexpr auto joiner<markdown::detail::SequenceType, markdown::detail::TableRow>  = QStringView{u" | "};
-template<> constexpr auto suffix<markdown::detail::SequenceType, markdown::detail::TableRow>  = QStringView{u" |"};
+
+using enum markdown::detail::FragmentType;
+using enum markdown::detail::SequenceType;
+
+using MarkdownFragmentType = markdown::detail::FragmentType;
+using MarkdownSequenceType = markdown::detail::SequenceType;
+
+template<> inline constexpr auto prefix<MarkdownFragmentType, Headline1> = QStringView{u"# "};
+template<> inline constexpr auto prefix<MarkdownFragmentType, Headline2> = QStringView{u"## "};
+template<> inline constexpr auto prefix<MarkdownFragmentType, Bold>      = QStringView{u"**"};
+template<> inline constexpr auto suffix<MarkdownFragmentType, Bold>      = QStringView{u"**"};
+template<> inline constexpr auto prefix<MarkdownSequenceType, TableRow>  = QStringView{u"| "};
+template<> inline constexpr auto joiner<MarkdownSequenceType, TableRow>  = QStringView{u" | "};
+template<> inline constexpr auto suffix<MarkdownSequenceType, TableRow>  = QStringView{u" |"};
+
 } // namespace markup::detail
 
 inline namespace mermaid {
@@ -155,16 +163,24 @@ REPORTING_MARKUP_DECLARE_SEQUENCE(Line)
 } // namespace mermaid
 
 namespace markup::detail {
-template<> constexpr auto prefix<mermaid::detail::FragmentType, mermaid::detail::Title> = QStringView{u"  title \""};
-template<> constexpr auto suffix<mermaid::detail::FragmentType, mermaid::detail::Title> = QStringView{u"\""};
-template<> constexpr auto prefix<mermaid::detail::SequenceType, mermaid::detail::XAxis> = QStringView{u"  x-axis [\""};
-template<> constexpr auto joiner<mermaid::detail::SequenceType, mermaid::detail::XAxis> = QStringView{u"\", \""};
-template<> constexpr auto suffix<mermaid::detail::SequenceType, mermaid::detail::XAxis> = QStringView{u"\"]"};
-template<> constexpr auto prefix<mermaid::detail::FragmentType, mermaid::detail::YAxis> = QStringView{u"  y-axis \""};
-template<> constexpr auto suffix<mermaid::detail::FragmentType, mermaid::detail::YAxis> = QStringView{u"\""};
-template<> constexpr auto prefix<mermaid::detail::SequenceType, mermaid::detail::Line>  = QStringView{u"  line ["};
-template<> constexpr auto joiner<mermaid::detail::SequenceType, mermaid::detail::Line>  = QStringView{u", "};
-template<> constexpr auto suffix<mermaid::detail::SequenceType, mermaid::detail::Line>  = QStringView{u"]"};
+
+using enum mermaid::detail::FragmentType;
+using enum mermaid::detail::SequenceType;
+
+using MermaidFragmentType = mermaid::detail::FragmentType;
+using MermaidSequenceType = mermaid::detail::SequenceType;
+
+template<> inline constexpr auto prefix<MermaidFragmentType, Title> = QStringView{u"  title \""};
+template<> inline constexpr auto suffix<MermaidFragmentType, Title> = QStringView{u"\""};
+template<> inline constexpr auto prefix<MermaidSequenceType, XAxis> = QStringView{u"  x-axis [\""};
+template<> inline constexpr auto joiner<MermaidSequenceType, XAxis> = QStringView{u"\", \""};
+template<> inline constexpr auto suffix<MermaidSequenceType, XAxis> = QStringView{u"\"]"};
+template<> inline constexpr auto prefix<MermaidFragmentType, YAxis> = QStringView{u"  y-axis \""};
+template<> inline constexpr auto suffix<MermaidFragmentType, YAxis> = QStringView{u"\""};
+template<> inline constexpr auto prefix<MermaidSequenceType, Line>  = QStringView{u"  line ["};
+template<> inline constexpr auto joiner<MermaidSequenceType, Line>  = QStringView{u", "};
+template<> inline constexpr auto suffix<MermaidSequenceType, Line>  = QStringView{u"]"};
+
 } // namespace markup::detail
 
 
