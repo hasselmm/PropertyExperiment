@@ -29,7 +29,7 @@ struct Fragment
 
     template<std::size_t N>
     Fragment(const char16_t (& text)[N])
-        : text{QString::fromUtf16(text, N)}
+        : text{QString::fromUtf16(text, N - 1)}
     {}
 
     friend QTextStream &operator<<(QTextStream &stream, const Fragment<T> &fragment)
