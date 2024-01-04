@@ -193,8 +193,8 @@ void writeBenchmarkTable(QTextStream &stream,
     stream << header << endl;
 
     for (const auto &[name, title] : categories) {
-        const auto makeResult = [&](int i) {
-            auto result = benchmarkResult(results, name, benchmarkGroup[i].id);
+        const auto makeResult = [&, cn = name](int i) {
+            auto result = benchmarkResult(results, cn, benchmarkGroup[i].id);
 
             if (const auto dot = result.indexOf(u'.'); dot >= 0) // align by dot
                 result = result.leftJustified(dot + 7).replace(u' ', u'\u00A0');
