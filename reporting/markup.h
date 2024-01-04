@@ -39,10 +39,7 @@ struct Fragment
 
     operator QString() const noexcept
     {
-        static const auto s_prefix = prefix<FragmentType, T>.toString();
-        static const auto s_suffix = suffix<FragmentType, T>.toString();
-
-        return s_prefix + text + s_suffix;
+        return prefix<FragmentType, T> % text % suffix<FragmentType, T>;
     }
 
     QString text;
