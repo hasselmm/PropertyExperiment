@@ -19,11 +19,18 @@ struct Fragment
 {
     using FragmentType = decltype(T);
 
-    Fragment(QString &&text) : text{std::move(text)} {}
-    Fragment(const QString &text) : text{std::move(text)} {}
+    Fragment(QString &&text) noexcept
+        : text{std::move(text)}
+    {}
+
+    Fragment(const QString &text) noexcept
+        : text{std::move(text)}
+    {}
 
     template<std::size_t N>
-    Fragment(const char16_t (& text)[N]) : text{QString::fromUtf16(text, N)} {}
+    Fragment(const char16_t (& text)[N])
+        : text{QString::fromUtf16(text, N)}
+    {}
 
     friend QTextStream &operator<<(QTextStream &stream, const Fragment<T> &fragment)
     {
@@ -76,7 +83,7 @@ struct Sequence
     SentinelType last;
 };
 
-} // namespace markup
+} // namespace markup::detail
 
 #define REPORTING_MARKUP_DECLARE_FRAGMENT(FRAGMENT)                             \
 using FRAGMENT = markup::detail::Fragment<detail::FRAGMENT>;
