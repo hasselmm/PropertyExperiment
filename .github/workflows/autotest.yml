@@ -24,6 +24,11 @@ on:
         type:        string
         required:    true
 
+      reporting:
+        type:        boolean
+        required:    false
+        default:     false
+
 permissions:
   contents: read
   actions: read
@@ -46,6 +51,15 @@ jobs:
     needs: status
 
     steps:
+    - name: "Identify build variant"
+      id:    variant-id
+      shell: bash
+      run: >-
+        echo "value=${{
+            format(inputs.msys2_system && 'Qt-{0}-{1}-{2}-{3}' || 'Qt-{0}-{1}-{2}',
+                   inputs.qt_version, runner.os, inputs.compiler, inputs.msys2_system)
+        }}" >> $GITHUB_OUTPUT
+
     - name: "Identify MSYS2 system"
       id:    msys2
       shell: bash
@@ -70,7 +84,7 @@ jobs:
       if:   ${{!inputs.msys2_system}}
       with:
         version: ${{inputs.qt_version}}
-        tools: "tools_ninja"
+        tools: tools_ninja
         cache: true
 
     - name: "Install Qt using MSYS2"
@@ -119,8 +133,6 @@ jobs:
         fi
 
         echo "build-output-dir=${{ github.workspace }}/build" >> $GITHUB_OUTPUT
-        echo "build-shell=${{ inputs.msys2_system && 'msys2 {0}' || '' }}" >> $GITHUB_OUTPUT
-        echo "build-path=${{ matrix.msys2_system && format('PATH=/{0}/bin', matrix.msys2_system) || '' }}" >> $GITHUB_OUTPUT
 
         echo GITHUB_OUTPUT
         cat $GITHUB_OUTPUT
@@ -149,7 +161,8 @@ jobs:
         -D "CMAKE_CONFIGURATION_TYPES:LIST=Debug;MinSizeRel;RelWithDebInfo"
         -D "CMAKE_CXX_COMPILER:STRING=${{inputs.compiler}}"
         -D "CMAKE_CXX_COMPILER_WORKS:BOOL=YES"
-        -D "JUNIT_REPORTS:BOOL=YES"
+        -D "GENERATE_TEST_REPORTS:BOOL=YES"
+        -D "VARIANT_ID:STRING=${{steps.variant-id.outputs.value}}"
 
 
     - name: Build Debug
@@ -157,7 +170,7 @@ jobs:
       run: >
         cmake
         --build "${{steps.buildenv.outputs.build-output-dir}}"
-        --config Debug
+        --config Debug --target PropertyExperiment
 
     - name: Build MinSizeRel
       if:   ${{!inputs.msys2_system }}
@@ -171,7 +184,7 @@ jobs:
       run: >
         cmake
         --build "${{steps.buildenv.outputs.build-output-dir}}"
-        --config RelWithDebInfo
+        --config RelWithDebInfo --target PropertyExperiment
 
 
     - name:  Build Debug using MSYS2
@@ -181,7 +194,7 @@ jobs:
         PATH=/${{inputs.msys2_system}}/bin
         cmake
         --build "${{steps.buildenv.outputs.build-output-dir}}"
-        --config Debug
+        --config Debug --target PropertyExperiment
 
     - name:  Build MinSizeRel using MSYS2
       if:    ${{inputs.msys2_system}}
@@ -199,7 +212,7 @@ jobs:
         PATH=/${{inputs.msys2_system}}/bin
         cmake
         --build "${{steps.buildenv.outputs.build-output-dir}}"
-        --config RelWithDebInfo
+        --config RelWithDebInfo --target PropertyExperiment
 
 
     - name: Test Debug
@@ -214,21 +227,43 @@ jobs:
       working-directory: ${{steps.buildenv.outputs.build-output-dir}}
       run: ctest --rerun-failed --output-on-failure --build-config RelWithDebInfo
 
+    - name: Amend test reports with additional information
+      working-directory: ${{steps.buildenv.outputs.build-output-dir}}
+      shell: bash
+      run: |
+        for config in $(sed -ne 'y/;/ /;s/^CMAKE_CONFIGURATION_TYPES:.*=//p' CMakeCache.txt)
+        do
+            report="test-report-${{steps.variant-id.outputs.value}}-${config}.xml"
+
+            echo "<Environment>"                                            >> $report
+            echo "    <OperatingSystem>${{ runner.os }}</OperatingSystem>"  >> $report
+            echo "    <CMakeConfig>${config}</CMakeConfig>"                 >> $report
+            echo "    <Compiler>$(< compiler-info.txt)</Compiler>"          >> $report
+            echo "</Environment>"                                           >> $report
+        done
 
     - name: List build folder
       working-directory: ${{steps.buildenv.outputs.build-output-dir}}
       shell: bash
-      run: ls -l
+      run: ls -lR
 
-    - name: Publish Test Report
-      uses: mikepenz/action-junit-report@v4
-      if: always()
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      if:   always()
       with:
-        report_paths: "**/*-junit.xml"
+        name: "test-reports-${{steps.variant-id.outputs.value}}"
+        path: "${{steps.buildenv.outputs.build-output-dir}}/test-report-*.xml"
 
     - name: Archive build output on failure
-      uses: actions/upload-artifact@v3
-      if: failure()
+      uses: actions/upload-artifact@v4
+      if:   failure()
       with:
-        name: build-output
+        name: "build-output-${{steps.variant-id.outputs.value}}"
         path: "${{steps.buildenv.outputs.build-output-dir}}"
+
+    - name: Archive reporting tool
+      uses: actions/upload-artifact@v4
+      if:   inputs.reporting
+      with:
+        name: "reporting-tool-${{steps.variant-id.outputs.value}}"
+        path: "${{steps.buildenv.outputs.build-output-dir}}/reporting/MinSizeRel"

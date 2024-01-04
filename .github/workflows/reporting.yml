@@ -1,0 +1,80 @@
+name: Report test results
+
+on:
+  workflow_call:
+    inputs:
+      reporting_tool:
+        type:       string
+        required:   true
+
+      qt_version:
+        type:       string
+        required:   true
+
+      qt_tools:
+        type:       string
+        required:   true
+
+      platform:
+        type:       string
+        required:   false
+        default:    ubuntu-latest
+
+env:
+  QT_MESSAGE_PATTERN: >-
+    %{if-warning}::warning::%{endif}%{if-critical}::error::%{endif}%{message}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  reporting:
+    runs-on: ${{ inputs.platform }}
+
+    steps:
+    - name: Download reporting tool
+      uses: actions/download-artifact@v4
+      with:
+        path: tools
+        name: ${{ inputs.reporting_tool }}
+
+    - name: Download test reports
+      uses: actions/download-artifact@v4
+      with:
+        pattern: test-reports-*
+        merge-multiple: true
+
+    - run: ls -lR
+
+    - name: Install Qt using aqtinstall
+      uses: jurplel/install-qt-action@v3.3.0
+      with:
+        version: ${{ inputs.qt_version }}
+        tools:   ${{ inputs.qt_tools }}
+        cache:   true
+
+    - name: Check prepare reporting tool
+      id:   reporting-tool
+      run: |
+        test $(ls tools/reporting* | wc -l) -eq 1
+        reporting=$(ls tools/reporting*)
+        chmod a+x $reporting
+
+        echo "executable=$reporting" >> $GITHUB_OUTPUT
+
+    - name: Process test reports
+      run: >-
+        ${{ steps.reporting-tool.outputs.executable }}
+        --autotest-summary=autotests.github
+        --autotest-report=autotests.md
+        --benchmark-report=benchmarks.md
+        test-report-*.xml
+        && cat autotests.github
+        && cat autotests.md
+
+    - name: Test results
+      run : cat autotests.md > $GITHUB_STEP_SUMMARY
+
+    - name: Benchmark results
+      run:  cat benchmarks.md > $GITHUB_STEP_SUMMARY

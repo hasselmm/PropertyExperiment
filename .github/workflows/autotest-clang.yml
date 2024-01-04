@@ -69,8 +69,20 @@ jobs:
     uses: ./.github/workflows/autotest.yml
     if:   ${{ vars.CLANG_ENABLED != '0' }}
     with:
-      compiler:       ${{matrix.compiler_command || matrix.compiler}}
-      homebrew_path:  ${{matrix.homebrew_path}}
-      msys2_system:   ${{matrix.msys2_system}}
-      platform:       ${{matrix.platform}}
-      qt_version:     ${{matrix.qt_version}}
+      compiler:        ${{ matrix.compiler_command || matrix.compiler }}
+      homebrew_path:   ${{ matrix.homebrew_path }}
+      msys2_system:    ${{ matrix.msys2_system }}
+      platform:        ${{ matrix.platform }}
+      qt_version:      ${{ matrix.qt_version }}
+      reporting:       ${{ matrix.qt_version == '6.6.1'
+                        && matrix.platform   == 'ubuntu-latest'
+                        && matrix.compiler   == 'clang++-15'
+                        }}
+
+  reporting:
+    needs: clang
+    uses: ./.github/workflows/reporting.yml
+    with:
+      reporting_tool: reporting-tool-Qt-6.6.1-Linux-clang++-15
+      qt_tools:       tools_ninja
+      qt_version:     6.6.1
